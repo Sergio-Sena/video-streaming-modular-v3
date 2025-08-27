@@ -1,0 +1,60 @@
+/* Layout Fixes */
+#mainScreen {
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+    position: relative;
+}
+
+#mainScreen .app-header {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+#mainScreen .main-content {
+    margin-top: 0 !important;
+    padding-top: 20px;
+}
+
+/* Screen Management */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100vh;
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.screen.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    position: relative;
+}
+
+/* Ensure only one screen is visible */
+#loginScreen:not(.active),
+#mfaSetupScreen:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Body reset when main screen is active */
+body:has(#mainScreen.active) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* App container reset */
+#app {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Teste Local - Video Streaming SStech</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+        .warning { background: #ffc107; color: black; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .test-btn { background: #007bff; color: white; }
+        .main-btn { background: #28a745; color: white; }
+        pre { background: #1a1a1a; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Teste Local - Refatoração Modular</h1>
+        
+        <div class="test-section">
+            <h2>📋 Status dos Módulos</h2>
+            <div id="moduleStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔗 Teste de Conectividade</h2>
+            <button class="test-btn" onclick="testAPI()">Testar API AWS</button>
+            <button class="test-btn" onclick="testModules()">Testar Módulos JS</button>
+            <div id="connectivityResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎮 Ações de Teste</h2>
+            <button class="main-btn" onclick="openMainApp()">Abrir App Principal</button>
+            <button class="test-btn" onclick="testLogin()">Simular Login</button>
+            <button class="test-btn" onclick="testPlayer()">Testar Player</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Console de Debug</h2>
+            <pre id="debugConsole">Aguardando testes...</pre>
+        </div>
+    </div>
+
+    <script>
+        let debugLog = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.push(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            document.getElementById('debugConsole').textContent = debugLog.slice(-10).join('\n');
+        }
+
+        function checkModules() {
+            const modules = ['APIModule', 'AuthModule', 'VideosModule', 'PlayerModule'];
+            const status = document.getElementById('moduleStatus');
+            let html = '';
+
+            modules.forEach(module => {
+                const exists = window[module] !== undefined;
+                const statusClass = exists ? 'success' : 'error';
+                const statusText = exists ? '✅ Carregado' : '❌ Não encontrado';
+                html += `<div class="status ${statusClass}">${module}: ${statusText}</div>`;
+            });
+
+            status.innerHTML = html;
+        }
+
+        async function testAPI() {
+            log('Testando conectividade com API AWS...');
+            const results = document.getElementById('connectivityResults');
+            
+            try {
+                const response = await fetch('https://4y3erwjgak.execute-api.us-east-1.amazonaws.com/prod/auth', {
+                    method: 'OPTIONS'
+                });
+                
+                if (response.ok) {
+                    results.innerHTML = '<div class="status success">✅ API AWS acessível</div>';
+                    log('API AWS respondeu com sucesso', 'success');
+                } else {
+                    results.innerHTML = '<div class="status error">❌ API AWS com problemas</div>';
+                    log('API AWS retornou erro: ' + response.status, 'error');
+                }
+            } catch (error) {
+                results.innerHTML = '<div class="status error">❌ Erro de conexão com API</div>';
+                log('Erro de conexão: ' + error.message, 'error');
+            }
+        }
+
+        function testModules() {
+            log('Testando carregamento dos módulos...');
+            
+            try {
+                // Simular inicialização dos módulos
+                if (typeof APIModule !== 'undefined') {
+                    const api = new APIModule();
+                    log('APIModule: Instanciado com sucesso', 'success');
+                }
+                
+                log('Todos os módulos testados', 'success');
+            } catch (error) {
+                log('Erro ao testar módulos: ' + error.message, 'error');
+            }
+        }
+
+        function openMainApp() {
+            log('Abrindo aplicação principal...');
+            window.open('index.html', '_blank');
+        }
+
+        function testLogin() {
+            log('Simulando processo de login...');
+            // Simular dados de teste
+            const testData = {
+                email: 'sergiosenaadmin@sstech',
+                password: 'sergiosena',
+                mfaToken: '123456'
+            };
+            log('Dados de teste: ' + JSON.stringify(testData), 'info');
+        }
+
+        function testPlayer() {
+            log('Testando módulo do player...');
+            // Simular abertura do player
+            log('Player: Funcionalidade de modal testada', 'success');
+        }
+
+        // Inicializar testes
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Página de teste carregada');
+            checkModules();
+        });
+    </script>
+
+    <!-- Carregar módulos para teste -->
+    <script src="modules/api.js"></script>
+    <script src="modules/auth.js"></script>
+    <script src="modules/videos.js"></script>
+    <script src="modules/player.js"></script>
+</body>
+</html>

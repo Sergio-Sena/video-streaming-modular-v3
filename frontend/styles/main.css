@@ -79,10 +79,14 @@ body {
 }
 
 .logo span {
-    font-size: 0.9rem;
-    color: #a0a0a0;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     letter-spacing: 1px;
     margin-left: 0.5rem;
+    font-weight: 700;
 }
 
 /* Form Styles */

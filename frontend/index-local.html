@@ -11,9 +11,27 @@
     <link rel="stylesheet" href="styles/player.css">
     <link rel="stylesheet" href="styles/messages.css">
     <link rel="stylesheet" href="styles/layout.css">
-    <link rel="stylesheet" href="styles/upload.css">
+    <style>
+        .local-banner {
+            background: #ffc107;
+            color: #000;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+        body { margin-top: 50px; }
+    </style>
 </head>
 <body>
+    <div class="local-banner">
+        🧪 MODO TESTE LOCAL - API Simulada | Credenciais: sergiosenaadmin@sstech / sergiosena / qualquer MFA
+    </div>
+
     <div id="app">
         <!-- Login Screen -->
         <div id="loginScreen" class="screen active">
@@ -25,17 +43,17 @@
                 
                 <form id="loginForm" class="login-form">
                     <div class="input-group">
-                        <input type="email" id="email" placeholder="Email" required>
+                        <input type="email" id="email" placeholder="Email" required value="sergiosenaadmin@sstech">
                         <span class="input-icon">📧</span>
                     </div>
                     
                     <div class="input-group">
-                        <input type="password" id="password" placeholder="Senha" required>
+                        <input type="password" id="password" placeholder="Senha" required value="sergiosena">
                         <span class="input-icon">🔒</span>
                     </div>
                     
                     <div class="input-group">
-                        <input type="text" id="mfaToken" placeholder="Código MFA" required maxlength="6">
+                        <input type="text" id="mfaToken" placeholder="Código MFA (qualquer)" required maxlength="6" value="123456">
                         <span class="input-icon">🔐</span>
                     </div>
                     
@@ -48,12 +66,12 @@
                     </div>
                     
                     <button type="submit" class="login-btn">
-                        <span>Entrar</span>
+                        <span>Entrar (Teste Local)</span>
                         <div class="loading-spinner"></div>
                     </button>
                     
                     <button type="button" class="register-btn" id="registerBtn">
-                        Configurar MFA
+                        Configurar MFA (Simulado)
                     </button>
                 </form>
                 
@@ -66,7 +84,7 @@
             <div class="login-container">
                 <div class="logo">
                     <h1>Configurar MFA</h1>
-                    <span>Google Authenticator</span>
+                    <span>SStech</span>
                 </div>
                 
                 <div class="mfa-setup-content">
@@ -100,10 +118,10 @@
                     
                     <div class="setup-step hidden" id="step3">
                         <h3>Passo 3: Verificar</h3>
-                        <p>Digite o código de 6 dígitos do app:</p>
+                        <p>Digite qualquer código de 6 dígitos:</p>
                         <form id="verifyMfaForm">
                             <div class="input-group">
-                                <input type="text" id="verifyToken" placeholder="000000" maxlength="6" required>
+                                <input type="text" id="verifyToken" placeholder="123456" maxlength="6" required value="123456">
                             </div>
                             <button type="submit" class="verify-btn">Verificar e Ativar</button>
                         </form>
@@ -149,9 +167,9 @@
                         </div>
                     </div>
                     
-                    <div class="upload-area clickable" id="uploadArea">
+                    <div class="upload-area" id="uploadArea">
                         <div class="upload-icon" id="uploadIcon">📄</div>
-                        <h3 id="uploadTitle">Clique aqui ou arraste vídeos</h3>
+                        <h3 id="uploadTitle">Arraste vídeos aqui (Simulado)</h3>
                         <p>ou <button class="browse-btn" id="browseBtn">procure em seu computador</button></p>
                         <input type="file" id="fileInput" multiple accept="video/*" hidden>
                         <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
@@ -180,8 +198,8 @@
         </div>
     </div>
 
-    <!-- Scripts dos módulos -->
-    <script src="modules/api.js"></script>
+    <!-- Scripts dos módulos - Versão Local -->
+    <script src="modules/api-local.js"></script>
     <script src="modules/auth.js"></script>
     <script src="modules/videos.js"></script>
     <script src="modules/player.js"></script>

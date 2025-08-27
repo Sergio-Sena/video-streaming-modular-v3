@@ -10,9 +10,11 @@ from utils import CORS_HEADERS, success_response, error_response, get_credential
 def handler(event, context):
     """Handler principal para autenticação"""
     
+    origin = event.get('headers', {}).get('origin') or event.get('headers', {}).get('Origin')
+    
     # Resposta para OPTIONS (CORS)
     if event['httpMethod'] == 'OPTIONS':
-        return {'statusCode': 200, 'headers': CORS_HEADERS}
+        return {'statusCode': 200, 'headers': get_cors_headers(origin)}
     
     try:
         body = json.loads(event['body'])
@@ -65,11 +67,11 @@ def setup_mfa():
         return success_response({
             'qrCode': f'data:image/png;base64,{qr_code_base64}',
             'manualKey': secret
-        })
+        }, origin)
         
     except Exception as e:
         print(f"MFA setup error: {e}")
-        return error_response('Erro ao configurar MFA')
+        return error_response('Erro ao configurar MFA', origin)
 
 def verify_mfa(mfa_token):
     """Verifica código MFA"""
@@ -78,9 +80,9 @@ def verify_mfa(mfa_token):
         totp = pyotp.TOTP(credentials['mfaSecret'])
         
         if totp.verify(mfa_token):
-            return success_response({'message': 'MFA configurado!'})
+            return success_response({'message': 'MFA configurado!'}, origin)
         else:
-            return error_response('Código inválido')
+            return error_response('Código inválido', origin)
             
     except Exception as e:
         print(f"MFA verify error: {e}")
@@ -122,8 +124,8 @@ def login(body):
         return success_response({
             'token': token,
             'user': {'email': credentials['email']}
-        })
+        }, origin)
         
     except Exception as e:
         print(f"Login error: {e}")
-        return error_response('Erro no login')
+        return error_response('Erro no login', origin)

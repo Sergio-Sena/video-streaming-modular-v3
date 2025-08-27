@@ -18,7 +18,18 @@ class VideosModule {
             this.handleFileUpload(e.target.files);
         });
 
-        document.getElementById('browseBtn').addEventListener('click', () => {
+        // Upload area click
+        document.getElementById('uploadArea').addEventListener('click', () => {
+            const activeTab = document.querySelector('.upload-tab.active').dataset.type;
+            if (activeTab === 'folder') {
+                document.getElementById('folderInput').click();
+            } else {
+                document.getElementById('fileInput').click();
+            }
+        });
+
+        document.getElementById('browseBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
             const activeTab = document.querySelector('.upload-tab.active').dataset.type;
             if (activeTab === 'folder') {
                 document.getElementById('folderInput').click();
@@ -102,9 +113,9 @@ class VideosModule {
             return;
         }
 
-        videoGrid.innerHTML = videos.map(video => `
-            <div class="video-card" onclick="window.playerModule.play('${video.url}', '${video.name}')">
-                <div class="video-thumbnail">
+        videoGrid.innerHTML = videos.map((video, index) => `
+            <div class="video-card">
+                <div class="video-thumbnail" onclick="window.playerModule.play('${video.url}', '${video.name}')">
                     <video preload="metadata">
                         <source src="${video.url}" type="video/mp4">
                     </video>
@@ -114,6 +125,11 @@ class VideosModule {
                     <h3>${video.name}</h3>
                     <p>${this.formatFileSize(video.size)}</p>
                     <small>${new Date(video.lastModified).toLocaleDateString()}</small>
+                </div>
+                <div class="video-actions">
+                    <button class="delete-btn" onclick="window.videosModule.deleteVideo('${video.key}', ${index})" title="Deletar vídeo">
+                        🗑️
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -172,6 +188,48 @@ class VideosModule {
             const isVisible = videoName.includes(searchTerm.toLowerCase());
             card.style.display = isVisible ? 'block' : 'none';
         });
+    }
+
+    async deleteVideo(videoKey, index) {
+        if (!confirm('Tem certeza que deseja deletar este vídeo?')) {
+            return;
+        }
+
+        try {
+            const response = await window.api.deleteVideo(videoKey);
+            
+            if (response.success) {
+                this.showMessage('Vídeo deletado com sucesso!', 'success');
+                this.loadVideos();
+            } else {
+                this.showMessage('Erro ao deletar vídeo', 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao deletar:', error);
+            this.showMessage('Erro ao deletar vídeo', 'error');
+        }
+    }
+
+    showMessage(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 10000;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 3000);
     }
 
     formatFileSize(bytes) {

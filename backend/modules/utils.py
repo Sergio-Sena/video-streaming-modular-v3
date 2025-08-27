@@ -5,26 +5,41 @@ import jwt
 from datetime import datetime, timedelta
 
 # CORS headers para todas as respostas
-CORS_HEADERS = {
-    'Access-Control-Allow-Origin': 'https://videos.sstechnologies-cloud.com',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
-    'Content-Type': 'application/json'
-}
+def get_cors_headers(origin):
+    allowed_origins = [
+        'https://videos.sstechnologies-cloud.com',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080'
+    ]
+    
+    if origin in allowed_origins:
+        return {
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+            'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
+            'Content-Type': 'application/json'
+        }
+    
+    return {
+        'Access-Control-Allow-Origin': 'https://videos.sstechnologies-cloud.com',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization', 
+        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
+        'Content-Type': 'application/json'
+    }
 
-def success_response(data, status_code=200):
+def success_response(data, origin=None, status_code=200):
     """Resposta de sucesso padronizada"""
     return {
         'statusCode': status_code,
-        'headers': CORS_HEADERS,
+        'headers': get_cors_headers(origin),
         'body': json.dumps({'success': True, **data})
     }
 
-def error_response(message, status_code=400):
+def error_response(message, origin=None, status_code=400):
     """Resposta de erro padronizada"""
     return {
         'statusCode': status_code,
-        'headers': CORS_HEADERS,
+        'headers': get_cors_headers(origin),
         'body': json.dumps({'success': False, 'message': message})
     }
 

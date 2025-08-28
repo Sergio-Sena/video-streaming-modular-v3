@@ -1,0 +1,85 @@
+/* Layout Fix - Correção de sobreposição */
+
+/* Containers principais */
+.main-content {
+  padding-top: var(--spacing-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.content-header {
+  margin-bottom: var(--spacing-md);
+  position: relative;
+  z-index: 10;
+}
+
+/* Seções com espaçamento correto */
+.section-tabs {
+  margin: var(--spacing-md) 0;
+  position: relative;
+  z-index: 5;
+}
+
+.tab-btn {
+  margin-right: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Upload progress */
+.upload-progress {
+  margin-top: var(--spacing-sm);
+  position: relative;
+  z-index: 2;
+}
+
+/* Loading container */
+.loading-container {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+/* User menu */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+/* View controls */
+.view-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.view-btn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+  .header-content {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+  
+  .search-bar {
+    order: 2;
+    width: 100%;
+  }
+  
+  .user-menu {
+    order: 1;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .header-actions {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -43,19 +43,30 @@ class PlayerModule {
     }
 
     play(videoUrl, videoName) {
+        // Verifica se URL é válida
+        if (!videoUrl || videoUrl === 'undefined') {
+            console.error('URL do vídeo inválida:', videoUrl);
+            alert('Erro: URL do vídeo não encontrada');
+            return;
+        }
+        
+        // Corrige URL para CloudFront
+        if (videoUrl.includes('videos.sstechnologies-cloud.com')) {
+            videoUrl = videoUrl.replace('videos.sstechnologies-cloud.com', 'd2we88koy23cl4.cloudfront.net');
+        }
+        
+        console.log('Iniciando player para:', videoName, 'URL:', videoUrl);
+        
         this.modal.innerHTML = `
             <div class="modal-content">
-                <div class="modal-header">
-                    <h3>${videoName}</h3>
-                    <button class="close-btn" onclick="window.playerModule.close()">×</button>
-                </div>
+                <button class="close-btn" onclick="window.playerModule.close()">×</button>
                 <div class="video-container">
                     <video-js id="videoPlayer" 
                              class="vjs-default-skin" 
                              controls 
                              preload="auto" 
                              width="100%" 
-                             height="400" 
+                             height="100%" 
                              data-setup='{}'>
                         <source src="${videoUrl}" type="video/mp4">
                         <p class="vjs-no-js">
@@ -65,9 +76,6 @@ class PlayerModule {
                             </a>.
                         </p>
                     </video-js>
-                </div>
-                <div class="video-controls">
-                    <button onclick="window.playerModule.downloadVideo('${videoUrl}', '${videoName}')">⬇️ Download</button>
                 </div>
             </div>
         `;
@@ -177,9 +185,21 @@ class PlayerModule {
     }
     
     setupHLSPlayer(videoUrl, videoName) {
+        // Para arquivos .ts individuais, tentar reprodução direta primeiro
+        console.log('Arquivo .ts detectado, tentando reprodução direta');
+        
+        // Verifica se é um arquivo .m3u8 (playlist HLS) ou .ts individual
+        if (videoUrl.includes('.m3u8')) {
+            console.log('Arquivo .m3u8 detectado, usando HLS.js');
+            this.initializeHLS(videoUrl);
+        } else {
+            console.log('Arquivo .ts individual, tentando como MP4');
+            this.tryDirectPlay(videoUrl, videoName);
+        }
+    }
+    
+    initializeHLS(videoUrl) {
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-            console.log('HLS.js suportado, configurando para .ts');
-            
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: false,
@@ -197,24 +217,39 @@ class PlayerModule {
             hls.on(Hls.Events.ERROR, (event, data) => {
                 console.error('HLS Error:', data);
                 if (data.fatal) {
-                    console.log('Erro fatal HLS, tentando como MP4');
-                    this.tryDirectPlay(videoUrl, videoName);
+                    console.log('Erro fatal HLS, tentando fallback');
+                    this.tryDirectPlay(videoUrl.replace('.m3u8', '.ts'));
                 }
             });
             
             this.hls = hls;
         } else {
-            console.log('HLS.js não suportado, tentando reprodução direta');
-            this.tryDirectPlay(videoUrl, videoName);
+            console.log('HLS.js não suportado');
+            this.tryDirectPlay(videoUrl.replace('.m3u8', '.ts'));
         }
     }
     
     tryDirectPlay(videoUrl, videoName) {
         console.log('Tentando reprodução direta como MP4');
-        this.player.src({
-            src: videoUrl,
-            type: 'video/mp4'
-        });
+        
+        if (this.player && typeof this.player.src === 'function') {
+            // Força tipo MP4 para arquivos .ts
+            const mimeType = videoName.toLowerCase().endsWith('.ts') ? 'video/mp4' : this.getVideoMimeType(videoName);
+            this.player.src({
+                src: videoUrl,
+                type: mimeType
+            });
+            
+            // Adiciona listeners para debug
+            this.player.on('error', () => {
+                console.error('Video.js direct play error:', this.player.error());
+                console.log('Tentando fallback HTML5');
+                this.setupHTMLVideo(videoUrl, videoName);
+            });
+        } else {
+            console.log('Player não disponível, usando HTML5');
+            this.setupHTMLVideo(videoUrl, videoName);
+        }
     }
     
     tryHLSFallback(videoUrl, videoName) {
@@ -227,9 +262,19 @@ class PlayerModule {
     
     setupHTMLVideo(videoUrl, videoName) {
         const video = document.getElementById('videoPlayer');
-        if (video) {
+        if (video && typeof video.load === 'function') {
+            console.log('Configurando HTML5 video');
             video.src = videoUrl;
             video.load();
+            
+            // Event listeners para debug
+            video.addEventListener('loadstart', () => console.log('HTML5: Carregamento iniciado'));
+            video.addEventListener('error', (e) => {
+                console.error('HTML5 Error:', e);
+                console.error('Video error details:', video.error);
+            });
+        } else {
+            console.error('Elemento video não encontrado ou inválido');
         }
     }
     
@@ -254,6 +299,24 @@ class PlayerModule {
         return mimeTypes[ext] || 'video/mp4';
     }
 
+    testUrl(url) {
+        console.log('Testando URL:', url);
+        fetch(url, { method: 'HEAD' })
+            .then(response => {
+                console.log('Status:', response.status);
+                console.log('Headers:', [...response.headers.entries()]);
+                if (response.ok) {
+                    alert(`URL OK! Status: ${response.status}`);
+                } else {
+                    alert(`Erro na URL! Status: ${response.status}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao testar URL:', error);
+                alert(`Erro de rede: ${error.message}`);
+            });
+    }
+    
     downloadVideo(url, name) {
         const a = document.createElement('a');
         a.href = url;

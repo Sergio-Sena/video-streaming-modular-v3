@@ -198,7 +198,10 @@ class VideosModule {
                     }
                 }
 
-                const response = await window.api.getUploadUrl(file.name, file.type, file.size, folderPath);
+                // Redireciona uploads não-MP4 para bucket de conversão
+                const isMP4 = file.name.toLowerCase().endsWith('.mp4');
+                const targetBucket = isMP4 ? 'video-streaming-sstech-eaddf6a1' : 'video-conversion-temp-sstech';
+                const response = await window.api.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
                 
                 if (response.success) {
                     if (response.multipart) {

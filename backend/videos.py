@@ -113,7 +113,18 @@ def generate_upload_url(body, origin):
         # Determina Content-Type correto
         content_type = file_type
         if file_name.lower().endswith(('.ts', '.m2ts', '.mts')):
-            content_type = 'video/mp4'  # Força MP4 para melhor compatibilidade
+            content_type = 'video/mp2t'  # Tipo correto para .ts
+        elif not content_type or content_type == 'application/octet-stream':
+            # Fallback baseado na extensão
+            ext = file_name.lower().split('.')[-1]
+            content_type_map = {
+                'mp4': 'video/mp4',
+                'webm': 'video/webm',
+                'avi': 'video/x-msvideo',
+                'mov': 'video/quicktime',
+                'mkv': 'video/x-matroska'
+            }
+            content_type = content_type_map.get(ext, 'video/mp4')
         
         s3_client = boto3.client('s3')
         
@@ -140,6 +151,7 @@ def generate_upload_url(body, origin):
                     'Bucket': 'video-streaming-sstech-eaddf6a1',
                     'Key': key,
                     'ContentType': content_type,
+                    'CacheControl': 'max-age=31536000',
                     'Metadata': {
                         'original-type': file_type,
                         'original-name': file_name

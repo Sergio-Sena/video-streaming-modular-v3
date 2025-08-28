@@ -1,6 +1,7 @@
 import json
 import boto3
 import jwt
+import os
 from datetime import datetime
 
 # CORS headers para todas as respostas
@@ -34,8 +35,7 @@ def get_credentials():
 
 def verify_jwt_token(token, secret):
     try:
-        # Para teste, usar mesma chave da auth
-        jwt.decode(token, 'test-secret-key', algorithms=['HS256'])
+        jwt.decode(token, secret, algorithms=['HS256'])
         return True
     except Exception as e:
         print(f"DEBUG: JWT decode error: {e}")
@@ -101,6 +101,9 @@ def generate_upload_url(body, origin):
         file_size = body.get('fileSize')
         folder_path = body.get('folderPath', '')
         
+        # Determina bucket de destino
+        target_bucket = body.get('targetBucket', 'video-streaming-sstech-eaddf6a1')
+        
         # Gera chave com pasta se especificada
         timestamp = int(datetime.now().timestamp())
         if folder_path and folder_path.strip():
@@ -113,7 +116,18 @@ def generate_upload_url(body, origin):
         # Determina Content-Type correto
         content_type = file_type
         if file_name.lower().endswith(('.ts', '.m2ts', '.mts')):
-            content_type = 'video/mp4'  # Força MP4 para melhor compatibilidade
+            content_type = 'video/mp2t'  # Tipo correto para .ts
+        elif not content_type or content_type == 'application/octet-stream':
+            # Fallback baseado na extensão
+            ext = file_name.lower().split('.')[-1]
+            content_type_map = {
+                'mp4': 'video/mp4',
+                'webm': 'video/webm',
+                'avi': 'video/x-msvideo',
+                'mov': 'video/quicktime',
+                'mkv': 'video/x-matroska'
+            }
+            content_type = content_type_map.get(ext, 'video/mp4')
         
         s3_client = boto3.client('s3')
         
@@ -121,7 +135,7 @@ def generate_upload_url(body, origin):
         if file_size > 50 * 1024 * 1024:
             # Inicia multipart upload
             response = s3_client.create_multipart_upload(
-                Bucket='video-streaming-sstech-eaddf6a1',
+                Bucket=target_bucket,
                 Key=key,
                 ContentType=file_type
             )
@@ -137,13 +151,9 @@ def generate_upload_url(body, origin):
             upload_url = s3_client.generate_presigned_url(
                 'put_object',
                 Params={
-                    'Bucket': 'video-streaming-sstech-eaddf6a1',
+                    'Bucket': target_bucket,
                     'Key': key,
-                    'ContentType': content_type,
-                    'Metadata': {
-                        'original-type': file_type,
-                        'original-name': file_name
-                    }
+                    'ContentType': content_type
                 },
                 ExpiresIn=3600
             )
@@ -239,7 +249,7 @@ def list_videos(event, origin):
                             'name': path_parts[0],
                             'size': obj['Size'],
                             'lastModified': obj['LastModified'].isoformat(),
-                            'url': f'https://videos.sstechnologies-cloud.com/{obj["Key"]}'
+                            'url': f'{os.environ.get("CLOUDFRONT_URL", "https://d2we88koy23cl4.cloudfront.net")}/{obj["Key"]}'
                         })
                     else:
                         # Arquivo em pasta
@@ -252,7 +262,7 @@ def list_videos(event, origin):
                             'name': '/'.join(path_parts[1:]),
                             'size': obj['Size'],
                             'lastModified': obj['LastModified'].isoformat(),
-                            'url': f'https://videos.sstechnologies-cloud.com/{obj["Key"]}'
+                            'url': f'{os.environ.get("CLOUDFRONT_URL", "https://d2we88koy23cl4.cloudfront.net")}/{obj["Key"]}'
                         })
             
             return success_response({'hierarchy': hierarchy}, origin)
@@ -277,7 +287,7 @@ def list_videos(event, origin):
                         'name': obj['Key'].split('/')[-1],
                         'size': obj['Size'],
                         'lastModified': obj['LastModified'].isoformat(),
-                        'url': f'https://videos.sstechnologies-cloud.com/{obj["Key"]}',
+                        'url': f'{os.environ.get("CLOUDFRONT_URL", "https://d2we88koy23cl4.cloudfront.net")}/{obj["Key"]}',
                         'type': 'file'
                     })
             

@@ -149,6 +149,14 @@ deploy.bat
 - ✅ Z-index e posicionamento corrigidos
 - ✅ Suporte completo mobile/tablet/desktop
 
+### **FASE 9: Conversão Automática de Vídeos** ⚠️
+- ✅ AWS MediaConvert integrado
+- ✅ Bucket temporário para conversão
+- ✅ Lambda trigger automático
+- ❌ Conversão .ts/.avi/.mov → .mp4 (config erro)
+- ✅ Qualidade alta (8 Mbps)
+- ✅ Custo: ~$0.015/minuto de vídeo
+
 ### **MELHORIAS IMPLEMENTADAS** 🎨
 - ✅ Favicon claquete 🎬
 - ✅ Logo unificado (Video + SStech)
@@ -236,6 +244,8 @@ deploy.bat
 - ✅ **CORS Corrigido** (headers em todas as respostas)
 - 📝 **Sanitização de nomes** (caracteres especiais removidos)
 - 🔧 **Layout Corrigido** (sem sobreposição)
+- 🔄 **Conversão Automática** (.ts/.avi/.mov → .mp4)
+- 🎥 **URLs CloudFront** (player corrigido)
 
 ### **🚀 Sistema Completo** (CORS Corrigido - 28/08/2025):
 - 📏 Upload simples: ≤50MB (1 requisição PUT S3)
@@ -288,4 +298,26 @@ deploy.bat
 - **Responsivo**: Suporte 320px-1440px
 - **Mobile-First**: Layout otimizado para touch
 
-**Status: 100% FUNCIONAL - Player + Layout Profissional**
+**Status: 85% FUNCIONAL - Problemas Identificados**
+
+## 🔴 **PROBLEMAS ATUAIS - 28/08/2025**
+
+### **🔥 CRÍTICO**
+- ❌ **Token JWT Frontend**: Login funciona mas token não é aceito nas requisições
+- ❌ **MediaConvert Config**: Erro `sampleRate required` impede conversão
+
+### **🟡 MÉDIO**
+- ⚠️ **Upload MP4**: Depende da correção do token JWT
+- ⚠️ **Verificação Auth**: Login/logout automático intermitente
+
+### **🟢 BAIXO**
+- 🔄 **Cache CloudFront**: Demora para propagar mudanças
+- 🔄 **Debug Logs**: Limpeza de console logs
+
+### **🎯 Próximos Passos**
+1. Corrigir token JWT no frontend
+2. Ajustar configuração MediaConvert (sampleRate)
+3. Testar fluxo completo de conversão
+4. Otimizar cache e logs
+
+**Estimativa de correção**: 2-3 horas

@@ -64,10 +64,8 @@ class AuthModule {
                 this.showSuccessMessage('✓ Login realizado com sucesso!');
                 this.showToast('Bem-vindo ao Video Streaming SStech!', 'success');
                 
-                setTimeout(() => {
-                    this.showScreen('main');
-                    window.videosModule.loadVideos();
-                }, 1500);
+                this.showScreen('main');
+                window.videosModule.loadVideos();
                 
             } else {
                 this.showError(response.message || 'Credenciais inválidas');
@@ -116,13 +114,24 @@ class AuthModule {
     }
 
     checkAuth() {
-        if (window.api.isAuthenticated()) {
-            const email = localStorage.getItem('userEmail');
-            if (email) {
-                document.getElementById('userEmail').textContent = email;
-                this.showScreen('main');
-                window.videosModule.loadVideos();
-                return;
+        const token = localStorage.getItem('authToken');
+        const email = localStorage.getItem('userEmail');
+        
+        if (token && email) {
+            try {
+                // Verifica se token não expirou
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const now = Math.floor(Date.now() / 1000);
+                
+                if (payload.exp > now) {
+                    document.getElementById('userEmail').textContent = email;
+                    this.showScreen('main');
+                    window.videosModule.loadVideos();
+                    return;
+                }
+            } catch (e) {
+                console.log('Token inválido, fazendo logout');
+                this.logout();
             }
         }
         this.showScreen('login');

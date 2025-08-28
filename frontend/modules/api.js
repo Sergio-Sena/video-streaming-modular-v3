@@ -102,10 +102,10 @@ class APIModule {
         });
     }
 
-    async getUploadUrl(fileName, fileType, fileSize, folderPath = '') {
+    async getUploadUrl(fileName, fileType, fileSize, folderPath = '', targetBucket = 'video-streaming-sstech-eaddf6a1') {
         return await this.request('/videos', {
             method: 'POST',
-            body: JSON.stringify({ fileName, fileType, fileSize, folderPath })
+            body: JSON.stringify({ fileName, fileType, fileSize, folderPath, targetBucket })
         });
     }
 

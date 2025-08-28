@@ -1,0 +1,22 @@
+{
+  "Name": "video-streaming-security-headers",
+  "Comment": "Security headers for Video Streaming SStech",
+  "SecurityHeadersConfig": {
+    "StrictTransportSecurity": {
+      "AccessControlMaxAgeSec": 31536000,
+      "IncludeSubdomains": true,
+      "Override": true
+    },
+    "ContentTypeOptions": {
+      "Override": true
+    },
+    "FrameOptions": {
+      "FrameOption": "DENY",
+      "Override": true
+    },
+    "ReferrerPolicy": {
+      "ReferrerPolicy": "strict-origin-when-cross-origin",
+      "Override": true
+    }
+  }
+}

@@ -1,0 +1,34 @@
+const CACHE_NAME = 'video-streaming-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/styles/main.css',
+  '/styles/player.css',
+  '/styles/messages.css',
+  '/styles/layout.css',
+  '/modules/api.js',
+  '/modules/auth.js',
+  '/modules/videos.js',
+  '/modules/player.js',
+  '/modules/app.js'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      }
+    )
+  );
+});

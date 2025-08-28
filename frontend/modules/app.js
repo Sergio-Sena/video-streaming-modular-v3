@@ -22,6 +22,17 @@ class VideoStreamingApp {
         
         // Carregar credenciais lembradas
         this.loadRememberedCredentials();
+        
+        // Registrar service worker
+        this.registerServiceWorker();
+    }
+
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => console.log('SW registered:', registration))
+                .catch(error => console.log('SW registration failed:', error));
+        }
     }
 
     loadRememberedCredentials() {

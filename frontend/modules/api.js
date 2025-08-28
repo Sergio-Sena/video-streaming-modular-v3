@@ -30,15 +30,37 @@ class APIModule {
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
+                    console.error('API Error Details:', {
+                        url,
+                        status: response.status,
+                        config,
+                        errorData
+                    });
+                    console.error('ErrorData message:', errorData.message);
+                    console.error('Full errorData:', JSON.stringify(errorData, null, 2));
                 } catch (e) {
-                    // Se não conseguir parsear JSON, usa mensagem padrão
+                    console.error('API Error (no JSON):', {
+                        url,
+                        status: response.status,
+                        config
+                    });
                 }
+                
+                // Se erro 401, limpa token
+                if (response.status === 401) {
+                    this.logout();
+                    window.location.reload();
+                }
+                
                 throw new Error(errorMessage);
             }
             
             return await response.json();
         } catch (error) {
             console.error('API Error:', error);
+            console.error('Request details:', { url, config });
+            console.error('Config body:', config.body);
+            console.error('Config headers:', config.headers);
             
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
                 throw new Error('Erro de conexão. Verifique sua internet.');
@@ -80,17 +102,54 @@ class APIModule {
         });
     }
 
-    async getUploadUrl(fileName, fileType, fileSize) {
+    async getUploadUrl(fileName, fileType, fileSize, folderPath = '') {
         return await this.request('/videos', {
             method: 'POST',
-            body: JSON.stringify({ fileName, fileType, fileSize })
+            body: JSON.stringify({ fileName, fileType, fileSize, folderPath })
         });
     }
 
-    async getVideos() {
-        return await this.request('/videos', {
+    async getVideos(showHierarchy = false) {
+        const url = showHierarchy ? '/videos?hierarchy=true' : '/videos';
+        return await this.request(url, {
             method: 'GET'
         });
+    }
+
+    async deleteVideo(videoKey) {
+        return await this.request('/videos', {
+            method: 'DELETE',
+            body: JSON.stringify({ key: videoKey, type: 'file' })
+        });
+    }
+
+    async deleteFolder(folderKey) {
+        return await this.request('/videos', {
+            method: 'DELETE',
+            body: JSON.stringify({ key: folderKey, type: 'folder' })
+        });
+    }
+
+    async getPartUrl(uploadId, partNumber, key) {
+        return await this.request('/videos', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get-part-url', uploadId, partNumber, key })
+        });
+    }
+
+    async completeMultipart(uploadId, parts, key) {
+        return await this.request('/videos', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'complete-multipart', uploadId, parts, key })
+        });
+    }
+
+    async uploadChunk(url, chunk) {
+        const response = await fetch(url, {
+            method: 'PUT',
+            body: chunk
+        });
+        return response.headers.get('ETag');
     }
 
     async uploadToS3(uploadUrl, file, onProgress) {
@@ -100,7 +159,7 @@ class APIModule {
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable && onProgress) {
                     const percentComplete = (e.loaded / e.total) * 100;
-                    onProgress(percentComplete);
+                    onProgress(percentComplete, e.loaded, e.total);
                 }
             });
 

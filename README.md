@@ -104,14 +104,35 @@ deploy.bat
 - ✅ Testes locais aprovados
 - ✅ Validação em produção
 
+### **FASE 3: Gerenciamento de Pastas** ✅
+- ✅ Upload de pastas (preserva estrutura)
+- ✅ Visualização hierárquica
+- ✅ Delete recursivo de pastas
+- ✅ Toggle "Mostrar Pastas" 📊
+- ✅ Interface redesenhada (⬆️ Upload)
+
+### **FASE 4: Melhorias de UX** ✅
+- ✅ Barra progresso avançada (% + velocidade)
+- ✅ Tratamento de nomes com espaços
+- ✅ Detecção multipart (>50MB)
+- ✅ Mensagens de erro claras
+- ✅ CSS responsivo completo
+
+### **FASE 5: Upload Multipart Paralelo** ✅
+- ✅ Chunks de 20MB (otimizado)
+- ✅ 4 uploads simultâneos
+- ✅ Suporte até 5TB por arquivo
+- ✅ Progresso detalhado por chunk
+- ✅ Funciona para arquivos e pastas
+
 ### **MELHORIAS IMPLEMENTADAS** 🎨
 - ✅ Favicon claquete 🎬
 - ✅ Logo unificado (Video + SStech)
-- ✅ Upload área clicável
-- ✅ Botão deletar vídeos
+- ✅ Upload com opções (📄 Arquivos / 📁 Pasta)
+- ✅ Botão deletar vídeos e pastas
 - ✅ CORS corrigido (localhost + produção)
-- ✅ CSS organizado (4 arquivos)
-- ✅ Testes completos (3 versões)
+- ✅ CSS organizado (8 arquivos)
+- ✅ Logs de debug implementados
 
 ## 🛠️ **Tecnologias**
 
@@ -130,10 +151,17 @@ cd video-streaming-modular
 deploy.bat
 ```
 
+### **Upload de Vídeos**
+1. **Arquivos individuais**: Clique ⬆️ → 📄 Arquivos
+2. **Pastas completas**: Clique ⬆️ → 📁 Pasta
+3. **Visualizar hierarquia**: Clique 📊 "Mostrar Pastas"
+4. **Deletar pastas**: Hover sobre pasta → 🗑️
+
 ### **Desenvolvimento Local**
 ```bash
 # Backend: Testar localmente com SAM (futuro)
 # Frontend: Abrir index.html no navegador
+# Debug: F12 → Console para logs detalhados
 ```
 
 ## 🔧 **Dependências Python**
@@ -161,12 +189,23 @@ deploy.bat
 - **MFA**: Google Authenticator
 
 ### **Funcionalidades Ativas**:
-- 🔐 Login com MFA
-- 📤 Upload de vídeos (drag & drop)
-- 🗑️ Deletar vídeos (hover + confirmação)
+- 🔐 Login com MFA (Google Authenticator)
+- 📤 Upload arquivos individuais (até 5TB)
+- 📁 Upload de pastas (preserva estrutura)
+- ⚡ Upload paralelo (4x mais rápido)
+- 📊 Visualização hierárquica (toggle)
+- 🗑️ Deletar vídeos e pastas (recursivo)
 - 🎥 Player modal responsivo
+- 📊 Barra progresso avançada
 - 🎬 Favicon claquete
 - 📱 Interface responsiva
+
+### **🚀 Sistema Completo**:
+- 📏 Upload simples: ≤50MB (1 requisição)
+- ⚡ Upload multipart: >50MB (chunks 20MB, 4 paralelos)
+- 📁 Suporte completo a pastas
+- 🎯 Velocidade otimizada (4x mais rápido)
+- 💾 Suporte até 5TB por arquivo
 
 ---
 

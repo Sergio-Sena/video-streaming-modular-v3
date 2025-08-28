@@ -1,7 +1,7 @@
 import json
 import boto3
 from datetime import datetime
-from utils import CORS_HEADERS, success_response, error_response, get_credentials, verify_jwt_token
+from utils import get_cors_headers, success_response, error_response, get_credentials, verify_jwt_token
 
 def handler(event, context):
     """Handler principal para vídeos"""
@@ -10,7 +10,7 @@ def handler(event, context):
     
     # Resposta para OPTIONS (CORS)
     if event['httpMethod'] == 'OPTIONS':
-        return {'statusCode': 200, 'headers': get_cors_headers(origin)}
+        return {'statusCode': 200, 'headers': get_cors_headers(origin), 'body': ''}
     
     try:
         # Verifica autenticação
@@ -26,15 +26,15 @@ def handler(event, context):
         
         # Roteamento por método HTTP
         if event['httpMethod'] == 'POST':
-            return generate_upload_url(event)
+            return generate_upload_url(event, origin)
         elif event['httpMethod'] == 'GET':
-            return list_videos()
+            return list_videos(origin)
             
     except Exception as e:
         print(f"Videos error: {e}")
         return error_response('Erro interno', origin, 500)
 
-def generate_upload_url(event):
+def generate_upload_url(event, origin):
     """Gera URL pré-assinada para upload"""
     try:
         body = json.loads(event['body'])
@@ -65,13 +65,13 @@ def generate_upload_url(event):
             'uploadUrl': upload_url,
             'key': key,
             'message': 'URL de upload gerada'
-        })
+        }, origin)
         
     except Exception as e:
         print(f"Upload URL error: {e}")
-        return error_response('Erro ao gerar URL de upload')
+        return error_response('Erro ao gerar URL de upload', origin)
 
-def list_videos():
+def list_videos(origin):
     """Lista todos os vídeos do bucket"""
     try:
         s3_client = boto3.client('s3')
@@ -93,8 +93,8 @@ def list_videos():
                     'url': f'https://videos.sstechnologies-cloud.com/{obj["Key"]}'
                 })
         
-        return success_response({'videos': videos})
+        return success_response({'videos': videos}, origin)
         
     except Exception as e:
         print(f"List videos error: {e}")
-        return error_response('Erro ao listar vídeos')
+        return error_response('Erro ao listar vídeos', origin)

@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="styles/messages.css">
     <link rel="stylesheet" href="styles/layout.css">
     <link rel="stylesheet" href="styles/upload.css">
+    <link rel="stylesheet" href="styles/folders.css">
+    <link rel="stylesheet" href="styles/progress.css">
+    <link rel="stylesheet" href="styles/hierarchy.css">
+    <link rel="stylesheet" href="styles/upload-options.css">
 </head>
 <body>
     <div id="app">
@@ -133,7 +137,8 @@
                         <button id="searchBtn">🔍</button>
                     </div>
                     <div class="header-actions">
-                        <button class="action-btn" id="uploadToggle" title="Upload">📄</button>
+                        <button class="action-btn" id="showFoldersBtn" title="Mostrar Pastas">📊</button>
+                        <button class="action-btn" id="uploadToggle" title="Upload">⬆️</button>
                         <div class="view-controls">
                             <button class="view-btn active" data-view="grid">⊞</button>
                             <button class="view-btn" data-view="list">☰</button>
@@ -142,21 +147,29 @@
                 </div>
                 
                 <div class="upload-section" id="uploadSection">
-                    <div class="upload-options">
-                        <div class="upload-type-tabs">
-                            <button class="upload-tab active" data-type="files">📄 Arquivos</button>
-                            <button class="upload-tab" data-type="folder">📁 Pasta</button>
-                        </div>
-                    </div>
-                    
                     <div class="upload-area clickable" id="uploadArea">
-                        <div class="upload-icon" id="uploadIcon">📄</div>
-                        <h3 id="uploadTitle">Clique aqui ou arraste vídeos</h3>
-                        <p>ou <button class="browse-btn" id="browseBtn">procure em seu computador</button></p>
+                        <div class="upload-icon">⬆️</div>
+                        <h3>Escolha o tipo de upload</h3>
+                        
+                        <div class="upload-options">
+                            <button class="upload-option-btn" id="uploadFilesBtn">
+                                <span class="option-icon">📄</span>
+                                <span class="option-text">Arquivos</span>
+                                <small>Selecionar vídeos individuais</small>
+                            </button>
+                            
+                            <button class="upload-option-btn" id="uploadFolderBtn">
+                                <span class="option-icon">📁</span>
+                                <span class="option-text">Pasta</span>
+                                <small>Selecionar pasta com vídeos</small>
+                            </button>
+                        </div>
+                        
                         <input type="file" id="fileInput" multiple accept="video/*" hidden>
                         <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                        
                         <div class="upload-info">
-                            <small id="uploadInfo">Formatos suportados: MP4, WebM, AVI, MOV (máx. 5GB cada)</small>
+                            <small>Formatos suportados: MP4, WebM, AVI, MOV (máx. 5GB cada)</small>
                         </div>
                     </div>
                     

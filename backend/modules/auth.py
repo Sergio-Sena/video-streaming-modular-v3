@@ -5,7 +5,9 @@ import pyotp
 import qrcode
 import io
 import base64
-from utils import CORS_HEADERS, success_response, error_response, get_credentials
+import boto3
+from datetime import datetime, timedelta
+from utils import get_cors_headers, success_response, error_response, get_credentials
 
 def handler(event, context):
     """Handler principal para autenticação"""
@@ -14,7 +16,7 @@ def handler(event, context):
     
     # Resposta para OPTIONS (CORS)
     if event['httpMethod'] == 'OPTIONS':
-        return {'statusCode': 200, 'headers': get_cors_headers(origin)}
+        return {'statusCode': 200, 'headers': get_cors_headers(origin), 'body': ''}
     
     try:
         body = json.loads(event['body'])
@@ -86,7 +88,7 @@ def verify_mfa(mfa_token):
             
     except Exception as e:
         print(f"MFA verify error: {e}")
-        return error_response('Erro ao verificar MFA')
+        return error_response('Erro ao verificar MFA', origin)
 
 def login(body):
     """Processa login com email, senha e MFA"""

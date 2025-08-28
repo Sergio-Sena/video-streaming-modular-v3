@@ -1,0 +1,125 @@
+/* Barra de progresso melhorada */
+.upload-progress {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.upload-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.upload-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #fff;
+    flex: 1;
+    margin-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-status {
+    color: #007bff;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.upload-percent {
+    color: #28a745;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: right;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.upload-speed {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: right;
+}
+
+/* Estado de sucesso */
+.upload-item.success .upload-status {
+    color: #28a745;
+}
+
+.upload-item.success .progress-fill {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+/* Estado de erro */
+.upload-item.error .upload-status {
+    color: #dc3545;
+}
+
+.upload-item.error .progress-fill {
+    background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+/* Multipart upload */
+.upload-item.multipart {
+    border-left: 4px solid #007bff;
+}
+
+.upload-item.multipart .upload-status {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.upload-item.multipart .progress-fill {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    animation: multipart-pulse 2s infinite;
+}
+
+@keyframes multipart-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}

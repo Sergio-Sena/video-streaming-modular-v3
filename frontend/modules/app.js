@@ -25,6 +25,11 @@ class VideoStreamingApp {
         
         // Registrar service worker
         this.registerServiceWorker();
+        
+        // Inicializar touch handler
+        if (window.TouchHandler) {
+            window.touchHandler = new window.TouchHandler();
+        }
     }
 
     registerServiceWorker() {

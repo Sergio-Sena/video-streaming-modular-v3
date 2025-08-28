@@ -16,7 +16,7 @@ def handler(event, context):
     
     # Resposta para OPTIONS (CORS)
     if event['httpMethod'] == 'OPTIONS':
-        return {'statusCode': 200, 'headers': get_cors_headers(origin), 'body': ''}
+        return {'statusCode': 200, 'headers': get_cors_headers(), 'body': ''}
     
     try:
         body = json.loads(event['body'])
@@ -31,7 +31,11 @@ def handler(event, context):
             
     except Exception as e:
         print(f"Auth error: {e}")
-        return error_response('Erro interno', 500)
+        return {
+            'statusCode': 500,
+            'headers': get_cors_headers(),
+            'body': json.dumps({'success': False, 'message': 'Erro interno'})
+        }
 
 def setup_mfa():
     """Configura MFA e gera QR Code"""
@@ -69,11 +73,11 @@ def setup_mfa():
         return success_response({
             'qrCode': f'data:image/png;base64,{qr_code_base64}',
             'manualKey': secret
-        }, origin)
+        })
         
     except Exception as e:
         print(f"MFA setup error: {e}")
-        return error_response('Erro ao configurar MFA', origin)
+        return error_response('Erro ao configurar MFA')
 
 def verify_mfa(mfa_token):
     """Verifica código MFA"""
@@ -82,13 +86,13 @@ def verify_mfa(mfa_token):
         totp = pyotp.TOTP(credentials['mfaSecret'])
         
         if totp.verify(mfa_token):
-            return success_response({'message': 'MFA configurado!'}, origin)
+            return success_response({'message': 'MFA configurado!'})
         else:
-            return error_response('Código inválido', origin)
+            return error_response('Código inválido')
             
     except Exception as e:
         print(f"MFA verify error: {e}")
-        return error_response('Erro ao verificar MFA', origin)
+        return error_response('Erro ao verificar MFA')
 
 def login(body):
     """Processa login com email, senha e MFA"""
@@ -110,7 +114,7 @@ def login(body):
         # Verifica MFA
         totp = pyotp.TOTP(credentials['mfaSecret'])
         if not totp.verify(mfa_token):
-            return error_response('Código MFA inválido', origin, 401)
+            return error_response('Código MFA inválido', 401)
         
         # Gera JWT
         token = jwt.encode(
@@ -126,8 +130,8 @@ def login(body):
         return success_response({
             'token': token,
             'user': {'email': credentials['email']}
-        }, origin)
+        })
         
     except Exception as e:
         print(f"Login error: {e}")
-        return error_response('Erro no login', origin)
+        return error_response('Erro no login')

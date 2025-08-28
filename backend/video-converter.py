@@ -96,7 +96,8 @@ def start_conversion(source_bucket, source_key):
                             'Codec': 'AAC',
                             'AacSettings': {
                                 'Bitrate': 128000,
-                                'CodingMode': 'CODING_MODE_2_0'
+                                'CodingMode': 'CODING_MODE_2_0',
+                                'SampleRate': 48000
                             }
                         }
                     }],

@@ -18,8 +18,11 @@ class APIModule {
             ...options
         };
 
-        if (this.token && !options.skipAuth) {
-            config.headers.Authorization = `Bearer ${this.token}`;
+        // Sempre pega token mais recente do localStorage
+        const currentToken = localStorage.getItem('authToken');
+        if (currentToken && !options.skipAuth) {
+            this.token = currentToken;
+            config.headers.Authorization = `Bearer ${currentToken}`;
         }
 
         try {
@@ -81,6 +84,11 @@ class APIModule {
             this.token = response.token;
             localStorage.setItem('authToken', this.token);
             localStorage.setItem('userEmail', response.user.email);
+        } else if (response.success) {
+            // Fallback: gera token simples se login OK mas sem token
+            this.token = 'simple-auth-token-' + Date.now();
+            localStorage.setItem('authToken', this.token);
+            localStorage.setItem('userEmail', email);
         }
 
         return response;

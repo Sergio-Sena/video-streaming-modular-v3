@@ -298,13 +298,20 @@ deploy.bat
 - **Responsivo**: Suporte 320px-1440px
 - **Mobile-First**: Layout otimizado para touch
 
-**Status: 85% FUNCIONAL - Problemas Identificados**
+**Status: 70% FUNCIONAL - Correções em Andamento**
 
 ## 🔴 **PROBLEMAS ATUAIS - 28/08/2025**
 
-### **🔥 CRÍTICO**
-- ❌ **Token JWT Frontend**: Login funciona mas token não é aceito nas requisições
-- ❌ **MediaConvert Config**: Erro `sampleRate required` impede conversão
+### **✅ RESOLVIDO**
+- ✅ **MediaConvert Config**: SampleRate 48000 adicionado - conversão funcionando
+- ✅ **Python Runtime**: Atualizado para 3.11 (todas as Lambdas)
+- ✅ **Player Otimizado**: 90% modal, sem URL debug, centralizado
+- ✅ **Sistema Conversão**: .ts → MP4 automático (job criado com sucesso)
+
+### **🔴 PROBLEMAS ATUAIS**
+- ❌ **Login Quebrado**: Autenticação simplificada não funciona
+- ❌ **Token JWT**: Ainda rejeitado pelo backend
+- ❌ **Frontend**: Não consegue logar na aplicação
 
 ### **🟡 MÉDIO**
 - ⚠️ **Upload MP4**: Depende da correção do token JWT
@@ -314,10 +321,15 @@ deploy.bat
 - 🔄 **Cache CloudFront**: Demora para propagar mudanças
 - 🔄 **Debug Logs**: Limpeza de console logs
 
-### **🎯 Próximos Passos**
-1. Corrigir token JWT no frontend
-2. Ajustar configuração MediaConvert (sampleRate)
-3. Testar fluxo completo de conversão
-4. Otimizar cache e logs
+### **🔧 TENTATIVAS DE CORREÇÃO**
+1. ✅ Hardcoded JWT secret (não resolveu)
+2. ✅ Autenticação simplificada (não resolveu)
+3. ✅ Debug JWT detalhado (signature verification failed)
+4. ❌ Sistema ainda inacessível via web
 
-**Estimativa de correção**: 2-3 horas
+### **🎯 Próximos Passos**
+1. **URGENTE**: Corrigir sistema de login
+2. Implementar bypass de autenticação temporário
+3. Testar fluxo completo após login funcionar
+
+**Estimativa de correção**: 1-2 horas

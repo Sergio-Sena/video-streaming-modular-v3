@@ -16,10 +16,15 @@
     <link rel="stylesheet" href="styles/upload.css">
     <link rel="stylesheet" href="styles/folders.css">
     <link rel="stylesheet" href="styles/progress.css">
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
+    <!-- HLS.js for .ts support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="stylesheet" href="styles/hierarchy.css">
     <link rel="stylesheet" href="styles/upload-options.css">
     <link rel="stylesheet" href="styles/mobile-first.css">
     <link rel="stylesheet" href="styles/layout-fix.css">
+    <link rel="stylesheet" href="styles/login-fix.css">
     <script src="js/touch.js"></script>
 </head>
 <body>
@@ -170,8 +175,8 @@
                             </button>
                         </div>
                         
-                        <input type="file" id="fileInput" multiple accept="video/*" hidden>
-                        <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                        <input type="file" id="fileInput" multiple accept="video/*,.ts,.m2ts,.mts,.vob,.ogv" hidden>
+                        <input type="file" id="folderInput" webkitdirectory multiple hidden>
                         
                         <div class="upload-info">
                             <small>Formatos suportados: MP4, WebM, AVI, MOV (máx. 5GB cada)</small>
@@ -199,6 +204,8 @@
     </div>
 
     <!-- Scripts dos módulos -->
+    <!-- Video.js JS -->
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
     <script src="modules/api.js"></script>
     <script src="modules/auth.js"></script>
     <script src="modules/videos.js"></script>

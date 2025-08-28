@@ -1,0 +1,1 @@
+{"errorMessage": "'httpMethod'", "errorType": "KeyError", "requestId": "b8334d9f-5094-44ec-8c7d-d56ef02b25ce", "stackTrace": ["  File \"/var/task/videos.py\", line 48, in handler\n    if event['httpMethod'] == 'OPTIONS':\n"]}

@@ -1,0 +1,46 @@
+.player-options {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.player-options button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.player-options button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.player-options button:active {
+    transform: translateY(0);
+}
+
+#playerContainer {
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+}
+
+@media (max-width: 768px) {
+    .player-options {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .player-options button {
+        width: 100%;
+        max-width: 250px;
+    }
+}

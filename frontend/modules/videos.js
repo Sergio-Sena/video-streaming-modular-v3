@@ -11,12 +11,16 @@ class VideosModule {
     initEventListeners() {
         // Upload files
         document.getElementById('fileInput').addEventListener('change', (e) => {
+            console.log(`DEBUG: Arquivos selecionados: ${e.target.files.length}`);
             this.handleFileUpload(e.target.files);
+            e.target.value = ''; // Reset input
         });
 
         // Upload folder
         document.getElementById('folderInput').addEventListener('change', (e) => {
+            console.log(`DEBUG: Pasta selecionada com ${e.target.files.length} arquivos`);
             this.handleFileUpload(e.target.files);
+            e.target.value = ''; // Reset input
         });
 
         // Upload option buttons
@@ -139,11 +143,49 @@ class VideosModule {
     async handleFileUpload(files) {
         const uploadProgress = document.getElementById('uploadProgress');
         
-        for (const file of files) {
-            if (!file.type.startsWith('video/')) {
-                alert(`${file.name} não é um arquivo de vídeo válido`);
-                continue;
-            }
+        console.log(`DEBUG: ===== INICIANDO UPLOAD =====`);
+        console.log(`DEBUG: Total de arquivos recebidos: ${files.length}`);
+        
+        // Lista todos os arquivos recebidos
+        Array.from(files).forEach((file, index) => {
+            console.log(`DEBUG: Arquivo ${index + 1}: ${file.name} (${file.type}) - Path: ${file.webkitRelativePath || 'N/A'}`);
+        });
+        
+        // Filtra apenas vídeos
+        const videoFiles = Array.from(files).filter((file, index) => {
+            const isVideo = file.type.startsWith('video/');
+            console.log(`DEBUG: Arquivo ${index + 1} - ${file.name}: ${isVideo ? 'VÍDEO ✓' : 'NÃO-VÍDEO ✗'}`);
+            return isVideo;
+        });
+        
+        console.log(`DEBUG: Arquivos de vídeo encontrados: ${videoFiles.length}`);
+        
+        if (videoFiles.length === 0) {
+            this.showMessage('Nenhum arquivo de vídeo encontrado', 'error');
+            return;
+        }
+        
+        // Verifica arquivos existentes
+        console.log(`DEBUG: Verificando arquivos existentes...`);
+        const filesToUpload = await this.checkExistingFiles(videoFiles);
+        
+        console.log(`DEBUG: Arquivos para upload após verificação: ${filesToUpload.length}`);
+        filesToUpload.forEach((file, index) => {
+            console.log(`DEBUG: Upload ${index + 1}: ${file.name}`);
+        });
+        
+        if (filesToUpload.length === 0) {
+            this.showMessage('Todos os arquivos já existem', 'info');
+            return;
+        }
+        
+        // Mostra seção de progresso
+        uploadProgress.style.display = 'block';
+        console.log(`DEBUG: ===== INICIANDO UPLOADS =====`);
+        
+        for (let i = 0; i < filesToUpload.length; i++) {
+            const file = filesToUpload[i];
+            console.log(`DEBUG: Processando arquivo ${i+1}/${filesToUpload.length}: ${file.name}`);
 
             try {
                 // Extrai caminho da pasta se for upload de pasta
@@ -152,7 +194,7 @@ class VideosModule {
                     const pathParts = file.webkitRelativePath.split('/');
                     if (pathParts.length > 1) {
                         pathParts.pop(); // Remove nome do arquivo
-                        folderPath = pathParts.join('/');
+                        folderPath = pathParts.join('/').replace(/[^a-zA-Z0-9\/\-_]/g, '_');
                     }
                 }
 
@@ -160,14 +202,14 @@ class VideosModule {
                 
                 if (response.success) {
                     if (response.multipart) {
-                        await this.handleMultipartUpload(file, response.uploadId, response.key, folderPath);
+                        await this.handleMultipartUpload(file, response.uploadId, response.key, folderPath, i, filesToUpload.length);
                     } else if (response.uploadUrl) {
                     const displayName = folderPath ? `${folderPath}/${file.name}` : file.name;
                     const progressDiv = document.createElement('div');
                     progressDiv.className = 'upload-item';
                     progressDiv.innerHTML = `
                         <div class="upload-info">
-                            <span class="file-name">${displayName}</span>
+                            <span class="file-name">[${i+1}/${filesToUpload.length}] ${displayName}</span>
                             <span class="upload-status">Enviando...</span>
                             <span class="upload-percent">0%</span>
                         </div>
@@ -177,9 +219,6 @@ class VideosModule {
                         <div class="upload-speed"></div>
                     `;
                     uploadProgress.appendChild(progressDiv);
-                    
-                    // Mostra seção de progresso
-                    uploadProgress.style.display = 'block';
 
                     const startTime = Date.now();
                     
@@ -206,8 +245,12 @@ class VideosModule {
                     progressDiv.querySelector('.upload-speed').textContent = '';
                     
                     setTimeout(() => {
-                        this.loadVideos();
                         progressDiv.remove();
+                        // Recarrega vídeos apenas no último arquivo
+                        if (i === filesToUpload.length - 1) {
+                            console.log('DEBUG: Último arquivo enviado, recarregando lista');
+                            this.loadVideos();
+                        }
                     }, 2000);
                     } else {
                         alert(`Erro: Não foi possível obter URL de upload para ${file.name}`);
@@ -216,9 +259,13 @@ class VideosModule {
                     alert(`Erro: ${response.message || 'Falha na geração de URL'}`);
                 }
             } catch (error) {
-                alert(`Erro no upload de ${file.name}: ${error.message}`);
+                console.error(`DEBUG: Erro no upload de ${file.name}:`, error);
+                this.showMessage(`Erro no upload de ${file.name}: ${error.message}`, 'error');
             }
         }
+        
+        console.log(`DEBUG: ===== TODOS OS ${filesToUpload.length} UPLOADS INICIADOS =====`);
+        this.showMessage(`${filesToUpload.length} arquivos em upload`, 'success');
     }
 
     filterVideos(searchTerm) {
@@ -251,6 +298,71 @@ class VideosModule {
         }
     }
 
+    async checkExistingFiles(files) {
+        try {
+            // Agrupa arquivos por pasta
+            const filesByFolder = {};
+            
+            files.forEach(file => {
+                let folderPath = '';
+                if (file.webkitRelativePath) {
+                    const pathParts = file.webkitRelativePath.split('/');
+                    if (pathParts.length > 1) {
+                        pathParts.pop();
+                        folderPath = pathParts.join('/').replace(/[^a-zA-Z0-9\/\-_]/g, '_');
+                    }
+                }
+                
+                if (!filesByFolder[folderPath]) {
+                    filesByFolder[folderPath] = [];
+                }
+                filesByFolder[folderPath].push(file);
+            });
+            
+            const filesToUpload = [];
+            let skippedCount = 0;
+            
+            // Verifica cada pasta
+            for (const [folderPath, folderFiles] of Object.entries(filesByFolder)) {
+                const response = await window.api.request('/videos', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'check-existing',
+                        files: folderFiles.map(f => ({ name: f.name })),
+                        folderPath: folderPath
+                    })
+                });
+                
+                if (response.success) {
+                    const existingFiles = response.existingFiles || [];
+                    
+                    folderFiles.forEach(file => {
+                        if (existingFiles.includes(file.name)) {
+                            console.log(`DEBUG: Arquivo ${file.name} já existe, pulando`);
+                            skippedCount++;
+                        } else {
+                            filesToUpload.push(file);
+                        }
+                    });
+                } else {
+                    // Se erro na verificação, faz upload de todos
+                    filesToUpload.push(...folderFiles);
+                }
+            }
+            
+            if (skippedCount > 0) {
+                this.showMessage(`${skippedCount} arquivos já existem e foram ignorados`, 'info');
+            }
+            
+            return filesToUpload;
+            
+        } catch (error) {
+            console.error('Erro ao verificar arquivos existentes:', error);
+            // Se erro, faz upload de todos
+            return files;
+        }
+    }
+
     showMessage(message, type) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -263,7 +375,7 @@ class VideosModule {
             border-radius: 5px;
             color: white;
             z-index: 10000;
-            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            background: ${type === 'success' ? '#28a745' : type === 'info' ? '#17a2b8' : '#dc3545'};
         `;
         
         document.body.appendChild(toast);
@@ -392,7 +504,7 @@ class VideosModule {
         }
     }
 
-    async handleMultipartUpload(file, uploadId, key, folderPath) {
+    async handleMultipartUpload(file, uploadId, key, folderPath, fileIndex = 0, totalFiles = 1) {
         const uploadProgress = document.getElementById('uploadProgress');
         const displayName = folderPath ? `${folderPath}/${file.name}` : file.name;
         
@@ -483,8 +595,12 @@ class VideosModule {
                 progressDiv.querySelector('.upload-speed').textContent = '';
                 
                 setTimeout(() => {
-                    this.loadVideos();
                     progressDiv.remove();
+                    // Recarrega vídeos apenas no último arquivo
+                    if (fileIndex === totalFiles - 1) {
+                        console.log('DEBUG: Último arquivo multipart enviado, recarregando lista');
+                        this.loadVideos();
+                    }
                 }, 2000);
             } else {
                 throw new Error('Erro ao finalizar upload');
@@ -495,6 +611,27 @@ class VideosModule {
             progressDiv.querySelector('.progress-fill').style.backgroundColor = '#dc3545';
             alert(`Erro no upload multipart: ${error.message}`);
         }
+    }
+
+    getVideoMimeType(filename) {
+        const ext = filename.toLowerCase().split('.').pop();
+        const mimeTypes = {
+            'mp4': 'video/mp4',
+            'avi': 'video/x-msvideo',
+            'mov': 'video/quicktime',
+            'wmv': 'video/x-ms-wmv',
+            'flv': 'video/x-flv',
+            'webm': 'video/webm',
+            'mkv': 'video/x-matroska',
+            'm4v': 'video/x-m4v',
+            '3gp': 'video/3gpp',
+            'ts': 'video/mp2t',
+            'm2ts': 'video/mp2t',
+            'mts': 'video/mp2t',
+            'vob': 'video/dvd',
+            'ogv': 'video/ogg'
+        };
+        return mimeTypes[ext] || 'video/mp4';
     }
 
     formatFileSize(bytes) {

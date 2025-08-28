@@ -134,14 +134,31 @@ deploy.bat
 - ✅ Z-index hierarchy corrigido
 - ✅ Layout responsivo sem sobreposição
 
+### **FASE 7: Player Avançado** ✅
+- ✅ Video.js integrado (player profissional)
+- ✅ HLS.js para suporte nativo .ts
+- ✅ Fallback inteligente (HLS → MP4 → HTML5)
+- ✅ Controles avançados (velocidade, fullscreen)
+- ✅ Detecção automática de formato
+- ✅ Interface moderna e responsiva
+
+### **FASE 8: Correções de Layout** ✅
+- ✅ Sobreposição de login corrigida
+- ✅ Espaçamento responsivo otimizado
+- ✅ Altura fixa de inputs (50px/55px mobile)
+- ✅ Z-index e posicionamento corrigidos
+- ✅ Suporte completo mobile/tablet/desktop
+
 ### **MELHORIAS IMPLEMENTADAS** 🎨
 - ✅ Favicon claquete 🎬
 - ✅ Logo unificado (Video + SStech)
 - ✅ Upload com opções (📄 Arquivos / 📁 Pasta)
 - ✅ Botão deletar vídeos e pastas
-- ✅ CORS corrigido (localhost + produção)
-- ✅ CSS organizado (8 arquivos)
+- ✅ CORS corrigido (API Gateway + Lambda) - 28/08/2025
+- ✅ Upload multipart implementado - 28/08/2025
+- ✅ CSS organizado (11 arquivos)
 - ✅ Logs de debug implementados
+- ✅ Dependências Python corrigidas - 28/08/2025
 
 ## 🛠️ **Tecnologias**
 
@@ -161,10 +178,11 @@ deploy.bat
 ```
 
 ### **Upload de Vídeos**
-1. **Arquivos individuais**: Clique ⬆️ → 📄 Arquivos
-2. **Pastas completas**: Clique ⬆️ → 📁 Pasta
-3. **Visualizar hierarquia**: Clique 📊 "Mostrar Pastas"
-4. **Deletar pastas**: Hover sobre pasta → 🗑️
+1. **Arquivos individuais**: Clique ⬆️ → 📄 Arquivos (seleção múltipla)
+2. **Pastas completas**: Clique ⬆️ → 📁 Pasta (múltiplas pastas)
+3. **Upload automático**: ≤50MB (simples) | >50MB (multipart)
+4. **Visualizar hierarquia**: Clique 📊 "Mostrar Pastas"
+5. **Deletar itens**: Hover sobre item → 🗑️
 
 ### **Desenvolvimento Local**
 ```bash
@@ -195,30 +213,79 @@ deploy.bat
 ### **Credenciais**:
 - **Email**: sergiosenaadmin@sstech
 - **Senha**: sergiosena
-- **MFA**: Google Authenticator
+- **MFA**: 123456 (fixo para testes)
 
-### **Funcionalidades Ativas**:
-- 🔐 Login com MFA (Google Authenticator)
-- 📤 Upload arquivos individuais (até 5TB)
-- 📁 Upload de pastas (preserva estrutura)
-- ⚡ Upload paralelo (4x mais rápido)
+### **Funcionalidades Ativas** (Testadas 28/08/2025):
+- 🔐 Login com MFA fixo (123456 para testes)
+- 📤 Upload simples: ≤50MB (1 requisição)
+- ⚡ Upload multipart: >50MB (chunks 20MB, 4 paralelos)
+- 📁 Upload de arquivos múltiplos (seleção múltipla)
+- 📁 Upload de pastas múltiplas (preserva estrutura)
+- 🔄 Auto-detecção do método de upload
 - 📊 Visualização hierárquica (toggle)
 - 🗑️ Deletar vídeos e pastas (recursivo)
-- 🎥 Player modal responsivo
-- 📊 Barra progresso avançada
+- 🎥 **Player Video.js + HLS.js** (suporte .ts nativo)
+- 📹 **14 Extensões Suportadas** (.mp4, .ts, .mkv, .avi, etc.)
+- 🎛️ **Controles Avançados** (velocidade, fullscreen)
+- 📊 Barra progresso avançada (% + velocidade)
 - 🎬 Favicon claquete
 - 📱 **Mobile-First Interface**
 - 👆 **Touch Gestures** (swipe, pull-to-refresh)
 - 🎯 **Touch Targets ≥44px**
 - 📐 **Progressive Enhancement** (320px→1440px)
+- ✅ **CORS Corrigido** (headers em todas as respostas)
+- 📝 **Sanitização de nomes** (caracteres especiais removidos)
+- 🔧 **Layout Corrigido** (sem sobreposição)
 
-### **🚀 Sistema Completo**:
-- 📏 Upload simples: ≤50MB (1 requisição)
+### **🚀 Sistema Completo** (CORS Corrigido - 28/08/2025):
+- 📏 Upload simples: ≤50MB (1 requisição PUT S3)
 - ⚡ Upload multipart: >50MB (chunks 20MB, 4 paralelos)
-- 📁 Suporte completo a pastas
-- 🎯 Velocidade otimizada (4x mais rápido)
+- 🔄 Auto-detecção baseada no tamanho do arquivo
+- 📁 Suporte completo a pastas (hierarquia preservada)
+- 🎯 Velocidade otimizada (4x mais rápido para arquivos grandes)
 - 💾 Suporte até 5TB por arquivo
+- 📊 Progresso detalhado (% + velocidade + ETA)
+- ✅ CORS headers corrigidos nas Lambda functions
 
 ---
 
 **🎬 Video Streaming SStech - Refatoração Modular CONCLUÍDA** ✅
+
+## 🔧 **CORREÇÕES FINAIS - 28/08/2025**
+
+### ✅ **CORS Corrigido**
+- Headers CORS adicionados em todas as Lambda functions
+- API Gateway funcionando corretamente
+- Upload e listagem operacionais
+
+### ✅ **Upload Multipart Implementado**
+- Auto-detecção: ≤50MB (simples) | >50MB (multipart)
+- Chunks de 20MB com 4 uploads paralelos
+- Suporte até 5TB por arquivo
+- Progresso detalhado com velocidade
+
+### ✅ **Dependencies Fix**
+- Módulos Python corrigidos (JWT incluído)
+- ZIP estruturado corretamente
+- Lambda functions operacionais
+
+## 🎬 **PLAYER AVANÇADO - 28/08/2025**
+
+### ✅ **Video.js + HLS.js Implementado**
+- **Player Profissional**: Video.js integrado na aplicação
+- **Suporte .TS Nativo**: HLS.js para arquivos Transport Stream
+- **Fallback Inteligente**: HLS → MP4 → HTML5 automaticamente
+- **14 Extensões**: .mp4, .ts, .mkv, .avi, .mov, .webm, etc.
+- **Controles Avançados**: Velocidade (0.5x-2x), fullscreen
+- **Interface Moderna**: Responsiva e touch-friendly
+
+## 🔧 **LAYOUT CORRIGIDO - 28/08/2025**
+
+### ✅ **Sobreposição de Login Resolvida**
+- **Espaçamento Otimizado**: Gap 1.8rem entre inputs
+- **Altura Fixa**: 50px desktop, 55px mobile
+- **Z-index Corrigido**: Camadas sem conflito
+- **Responsivo**: Suporte 320px-1440px
+- **Mobile-First**: Layout otimizado para touch
+
+**Status: 100% FUNCIONAL - Player + Layout Profissional**

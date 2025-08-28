@@ -1,0 +1,6 @@
+{
+  "httpMethod": "OPTIONS",
+  "headers": {
+    "origin": "https://videos.sstechnologies-cloud.com"
+  }
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Upload Pasta</title>
+</head>
+<body>
+    <input type="file" id="folderTest" webkitdirectory multiple>
+    <div id="results"></div>
+    
+    <script>
+        document.getElementById('folderTest').addEventListener('change', (e) => {
+            const files = e.target.files;
+            const results = document.getElementById('results');
+            
+            console.log(`Total de arquivos selecionados: ${files.length}`);
+            
+            let html = `<h3>Arquivos Detectados: ${files.length}</h3>`;
+            
+            // Agrupa por pasta
+            const filesByFolder = {};
+            
+            Array.from(files).forEach((file, index) => {
+                console.log(`Arquivo ${index + 1}: ${file.name}`);
+                console.log(`  - Tipo: ${file.type}`);
+                console.log(`  - Tamanho: ${file.size}`);
+                console.log(`  - Path: ${file.webkitRelativePath}`);
+                
+                let folderPath = '';
+                if (file.webkitRelativePath) {
+                    const pathParts = file.webkitRelativePath.split('/');
+                    if (pathParts.length > 1) {
+                        pathParts.pop();
+                        folderPath = pathParts.join('/');
+                    }
+                }
+                
+                if (!filesByFolder[folderPath]) {
+                    filesByFolder[folderPath] = [];
+                }
+                filesByFolder[folderPath].push(file);
+            });
+            
+            // Mostra agrupamento
+            Object.keys(filesByFolder).forEach(folder => {
+                const folderFiles = filesByFolder[folder];
+                html += `<h4>Pasta: "${folder || 'Raiz'}" (${folderFiles.length} arquivos)</h4>`;
+                html += '<ul>';
+                folderFiles.forEach(file => {
+                    html += `<li>${file.name} (${file.type}) - ${(file.size/1024/1024).toFixed(2)}MB</li>`;
+                });
+                html += '</ul>';
+            });
+            
+            results.innerHTML = html;
+        });
+    </script>
+</body>
+</html>

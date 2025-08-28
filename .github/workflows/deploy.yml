@@ -2,7 +2,7 @@ name: Deploy Video Streaming
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, modular ]
 
 jobs:
   deploy:

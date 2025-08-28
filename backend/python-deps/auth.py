@@ -108,15 +108,10 @@ def login(body, origin):
         if password_hash != credentials.get('passwordHash', hashlib.sha256('sergiosena'.encode('utf-8')).hexdigest()):
             return error_response('Senha inválida', origin, 401)
         
-        # Verifica MFA (aceita código de teste ou código real)
-        if mfa_token == '123456':
-            # Código de teste aceito
-            pass
-        else:
-            # Verifica código real do Google Authenticator
-            totp = pyotp.TOTP(credentials['mfaSecret'])
-            if not totp.verify(mfa_token):
-                return error_response('Código MFA inválido', origin, 401)
+        # Verifica MFA
+        totp = pyotp.TOTP(credentials['mfaSecret'])
+        if not totp.verify(mfa_token):
+            return error_response('Código MFA inválido', origin, 401)
         
         # Gera JWT
         token = jwt.encode(

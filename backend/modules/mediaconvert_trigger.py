@@ -2,6 +2,25 @@ import json
 import boto3
 import os
 import urllib.parse
+import re
+import unicodedata
+
+def sanitize_filename(filename):
+    """Sanitiza nome do arquivo removendo caracteres problemáticos"""
+    # Normalizar e remover acentos
+    filename = unicodedata.normalize('NFD', filename)
+    filename = ''.join(c for c in filename if unicodedata.category(c) != 'Mn')
+    
+    # Manter apenas caracteres seguros
+    filename = re.sub(r'[^a-zA-Z0-9._/-]', '_', filename)
+    
+    # Limpar múltiplos underscores
+    filename = re.sub(r'_+', '_', filename)
+    
+    # Remover underscores no início/fim
+    filename = filename.strip('_')
+    
+    return filename
 
 def handler(event, context):
     """Trigger MediaConvert quando arquivo é enviado para bucket temp"""
@@ -33,11 +52,22 @@ def handler(event, context):
         input_key = key
         output_key = key.replace('videos/', 'converted/').rsplit('.', 1)[0] + '.mp4'
         
+        # Fallback inteligente: tenta original, depois sanitizado
+        try:
+            # Primeira tentativa: nome original
+            file_input_url = f"s3://{bucket}/{urllib.parse.quote(input_key, safe='/')}"
+            print(f"Tentando arquivo original: {file_input_url}")
+        except Exception as e:
+            # Fallback: nome sanitizado
+            sanitized_key = sanitize_filename(input_key)
+            file_input_url = f"s3://{bucket}/{urllib.parse.quote(sanitized_key, safe='/')}"
+            print(f"Fallback para nome sanitizado: {file_input_url}")
+        
         job_settings = {
             "Role": "arn:aws:iam::969430605054:role/MediaConvertRole",
             "Settings": {
                 "Inputs": [{
-                    "FileInput": f"s3://{bucket}/{urllib.parse.quote(input_key, safe='/')}",
+                    "FileInput": file_input_url,
                     "VideoSelector": {
                         "Rotate": "AUTO"
                     },

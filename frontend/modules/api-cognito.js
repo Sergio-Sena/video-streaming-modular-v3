@@ -94,18 +94,16 @@ class APICognitoModule {
     }
 
     async deleteVideo(videoKey) {
-        console.log('🗑️ Deletando vídeo...', { videoKey });
-        return await this.request('/videos', {
-            method: 'DELETE',
-            body: JSON.stringify({ key: videoKey, type: 'file' })
+        console.log('🗑️ Deletando vídeo (FASE 3 - NORMAL)...', { videoKey });
+        return await this.request(`/videos/delete?key=${encodeURIComponent(videoKey)}`, {
+            method: 'DELETE'
         });
     }
 
     async deleteFolder(folderKey) {
-        console.log('🗑️ Deletando pasta...', { folderKey });
-        return await this.request('/videos', {
-            method: 'DELETE',
-            body: JSON.stringify({ key: folderKey, type: 'folder' })
+        console.log('🗑️ Deletando pasta (FASE 3 - NORMAL)...', { folderKey });
+        return await this.request(`/videos/delete?folder=${encodeURIComponent(folderKey)}`, {
+            method: 'DELETE'
         });
     }
 

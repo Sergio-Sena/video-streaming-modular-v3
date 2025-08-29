@@ -397,12 +397,12 @@ class VideosModule {
     }
 
     async deleteVideo(videoKey, index) {
-        if (!confirm('Tem certeza que deseja deletar este vídeo?')) {
+        if (!confirm('Tem certeza que deseja deletar este vídeo?\n\nEsta ação não pode ser desfeita!')) {
             return;
         }
 
         try {
-            const response = await window.api.deleteVideo(videoKey);
+            const response = await window.apiModule.deleteVideo(videoKey);
             
             if (response.success) {
                 this.showMessage('Vídeo deletado com sucesso!', 'success');
@@ -509,7 +509,7 @@ class VideosModule {
         }
 
         try {
-            const response = await window.api.deleteFolder(folderKey);
+            const response = await window.apiModule.deleteFolder(folderKey);
             
             if (response.success) {
                 this.showMessage('Pasta deletada com sucesso!', 'success');

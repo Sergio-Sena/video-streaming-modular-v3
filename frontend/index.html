@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="styles/mobile-first.css">
     <link rel="stylesheet" href="styles/layout-fix.css">
     <link rel="stylesheet" href="styles/login-fix.css">
+    <link rel="stylesheet" href="styles/progress-enhanced.css">
     <script src="js/touch.js"></script>
 </head>
 <body>
@@ -148,12 +149,17 @@
                         <button id="searchBtn">🔍</button>
                     </div>
                     <div class="header-actions">
-                        <button class="action-btn" id="showFoldersBtn" title="Mostrar Pastas">📊</button>
-                        <button class="action-btn" id="uploadToggle" title="Upload">⬆️</button>
-                        <div class="view-controls">
-                            <button class="view-btn active" data-view="grid">⊞</button>
-                            <button class="view-btn" data-view="list">☰</button>
-                        </div>
+                        <!-- 1. Upload 1-clique -->
+                        <button class="action-btn" id="quickUploadBtn" title="Upload Rápido">📤</button>
+                        
+                        <!-- 2. Grade -->
+                        <button class="view-btn active" id="gridViewBtn" data-view="grid" title="Visualização em Grade">⊞</button>
+                        
+                        <!-- 3. Lista -->
+                        <button class="view-btn" id="listViewBtn" data-view="list" title="Visualização em Lista">☰</button>
+                        
+                        <!-- 4. Pastas -->
+                        <button class="action-btn" id="showFoldersBtn" title="Visualização de Pastas">🗂️</button>
                     </div>
                 </div>
                 
@@ -178,6 +184,7 @@
                         
                         <input type="file" id="fileInput" multiple accept="video/*,.ts,.m2ts,.mts,.vob,.ogv" hidden>
                         <input type="file" id="folderInput" webkitdirectory multiple hidden>
+                        <input type="file" id="quickUploadInput" multiple accept="video/*,.ts,.m2ts,.mts,.vob,.ogv" hidden>
                         
                         <div class="upload-info">
                             <small>Formatos suportados: MP4, WebM, AVI, MOV (máx. 5GB cada)</small>
@@ -205,10 +212,12 @@
     </div>
 
     <!-- Scripts dos módulos -->
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
     <!-- Video.js JS -->
     <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
-    <script src="modules/api.js"></script>
-    <script src="modules/auth.js"></script>
+    <script src="modules/api-cognito.js"></script>
+    <script src="modules/auth-cognito-debug.js"></script>
     <script src="modules/videos.js"></script>
     <script src="modules/player.js"></script>
     <script src="modules/app.js"></script>

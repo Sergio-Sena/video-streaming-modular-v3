@@ -7,25 +7,7 @@ import io
 import base64
 import boto3
 from datetime import datetime, timedelta
-from utils import get_cors_headers, success_response, error_response
-
-# JWT Secret consistente
-JWT_SECRET = 'video-streaming-jwt-super-secret-key-2025'
-
-def get_credentials():
-    try:
-        secrets_client = boto3.client('secretsmanager')
-        secret = secrets_client.get_secret_value(SecretId='video-streaming-user')
-        credentials = json.loads(secret['SecretString'])
-        credentials['jwtSecret'] = JWT_SECRET
-        return credentials
-    except Exception:
-        return {
-            'email': 'sergiosenaadmin@sstech',
-            'password': '$2b$12$LQv3c1yqBwEHFNjNJRwGe.4grAkOiTHHZBUfuAoyQ02M70GVFVQKA',
-            'mfaSecret': 'JBSWY3DPEHPK3PXP',
-            'jwtSecret': JWT_SECRET
-        }
+from utils import get_cors_headers, success_response, error_response, get_credentials
 
 def handler(event, context):
     """Handler principal para autenticação"""
@@ -109,30 +91,35 @@ def verify_mfa(mfa_token, origin):
         return error_response('Erro ao verificar MFA', origin)
 
 def login(body, origin):
-    """Processa login apenas com email e senha"""
+    """Processa login com email, senha e MFA"""
     try:
         email = body.get('email')
         password = body.get('password')
+        mfa_token = body.get('mfaToken')
         
         credentials = get_credentials()
         
         # Verifica email
         if email != credentials['email']:
-            return error_response('Credenciais inválidas', origin, 401)
+            return error_response('Email inválido', origin, 401)
         
         # Verifica senha
         if not bcrypt.checkpw(password.encode('utf-8'), credentials['password'].encode('utf-8')):
-            return error_response('Credenciais inválidas', origin, 401)
+            return error_response('Senha inválida', origin, 401)
         
-        # Gera JWT com secret consistente
+        # Verifica MFA
+        totp = pyotp.TOTP(credentials['mfaSecret'])
+        if not totp.verify(mfa_token):
+            return error_response('Código MFA inválido', origin, 401)
+        
+        # Gera JWT
         token = jwt.encode(
             {
                 'email': credentials['email'],
                 'iat': datetime.utcnow(),
-                'exp': datetime.utcnow() + timedelta(hours=24),
-                'sub': 'video-streaming-user'
+                'exp': datetime.utcnow() + timedelta(hours=24)
             },
-            JWT_SECRET,
+            credentials['jwtSecret'],
             algorithm='HS256'
         )
         

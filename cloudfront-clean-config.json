@@ -1,0 +1,36 @@
+{
+  "CallerReference": "video-streaming-cognito-clean-2025",
+  "Comment": "Video Streaming with Cognito - Clean CDN",
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-video-streaming-cognito-clean",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "MinTTL": 0,
+    "DefaultTTL": 300,
+    "MaxTTL": 86400,
+    "Compress": true,
+    "ForwardedValues": {
+      "QueryString": true,
+      "Cookies": {
+        "Forward": "none"
+      }
+    },
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    }
+  },
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3-video-streaming-cognito-clean",
+        "DomainName": "video-streaming-cognito-clean.s3.amazonaws.com",
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        }
+      }
+    ]
+  },
+  "Enabled": true,
+  "PriceClass": "PriceClass_100"
+}

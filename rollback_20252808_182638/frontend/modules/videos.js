@@ -23,17 +23,6 @@ class VideosModule {
             e.target.value = ''; // Reset input
         });
 
-        // Upload 1-clique
-        document.getElementById('quickUploadBtn').addEventListener('click', () => {
-            document.getElementById('quickUploadInput').click();
-        });
-        
-        document.getElementById('quickUploadInput').addEventListener('change', (e) => {
-            console.log(`DEBUG: Upload rápido - ${e.target.files.length} arquivos`);
-            this.handleFileUpload(e.target.files);
-            e.target.value = ''; // Reset input
-        });
-
         // Upload option buttons
         document.getElementById('uploadFilesBtn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -45,18 +34,15 @@ class VideosModule {
             document.getElementById('folderInput').click();
         });
 
-        // Upload toggle (removido - não é mais necessário)
+        // Upload toggle
+        document.getElementById('uploadToggle').addEventListener('click', () => {
+            const uploadSection = document.getElementById('uploadSection');
+            uploadSection.style.display = uploadSection.style.display === 'none' ? 'block' : 'none';
+        });
 
-        // Show folders - apenas pastas
+        // Show folders toggle
         document.getElementById('showFoldersBtn').addEventListener('click', () => {
-            this.showFoldersOnly = !this.showFoldersOnly;
-            console.log(`📁 Mostrar apenas pastas: ${this.showFoldersOnly}`);
-            
-            if (this.showFoldersOnly) {
-                this.displayFoldersOnly();
-            } else {
-                this.loadVideos();
-            }
+            this.toggleHierarchyView();
         });
 
         // Search functionality
@@ -65,16 +51,15 @@ class VideosModule {
         });
 
         // View controls
-        document.getElementById('gridViewBtn').addEventListener('click', () => {
-            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('gridViewBtn').classList.add('active');
-            document.getElementById('videoGrid').className = 'video-grid';
-        });
-        
-        document.getElementById('listViewBtn').addEventListener('click', () => {
-            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('listViewBtn').classList.add('active');
-            document.getElementById('videoGrid').className = 'video-list';
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const view = e.target.dataset.view;
+                const videoGrid = document.getElementById('videoGrid');
+                videoGrid.className = view === 'list' ? 'video-list' : 'video-grid';
+            });
         });
     }
 
@@ -87,15 +72,11 @@ class VideosModule {
         try {
             const response = await window.api.getVideos(this.showHierarchy);
             
-            console.log('📥 Resposta loadVideos:', response);
-            
             if (response.success) {
                 if (this.showHierarchy && response.hierarchy) {
                     this.displayHierarchy(response.hierarchy);
                 } else {
-                    const items = response.items || response.videos || [];
-                    console.log('📋 Items para exibir:', items);
-                    this.displayItems(items);
+                    this.displayItems(response.items || response.videos || []);
                 }
             }
         } catch (error) {
@@ -109,15 +90,10 @@ class VideosModule {
     displayItems(items) {
         const videoGrid = document.getElementById('videoGrid');
         
-        console.log('📋 displayItems chamado com:', items);
-        
         if (!items || items.length === 0) {
-            console.log('⚠️ Nenhum item para exibir');
-            videoGrid.innerHTML = '<p>Nenhum vídeo encontrado. Faça upload de alguns vídeos!</p>';
+            videoGrid.innerHTML = '<p>Nenhum item encontrado</p>';
             return;
         }
-        
-        console.log(`🎬 Exibindo ${items.length} itens`);
 
         videoGrid.innerHTML = items.map((item, index) => {
             if (item.type === 'folder') {
@@ -237,20 +213,15 @@ class VideosModule {
                     progressDiv.innerHTML = `
                         <div class="upload-info">
                             <span class="file-name">[${i+1}/${filesToUpload.length}] ${displayName}</span>
-                            <span class="upload-status">Preparando...</span>
+                            <span class="upload-status">Enviando...</span>
                             <span class="upload-percent">0%</span>
                         </div>
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: 0%"></div>
                         </div>
-                        <div class="upload-speed">Calculando...</div>
+                        <div class="upload-speed"></div>
                     `;
                     uploadProgress.appendChild(progressDiv);
-                    
-                    // Atualiza status para "Enviando"
-                    setTimeout(() => {
-                        progressDiv.querySelector('.upload-status').textContent = 'Enviando...';
-                    }, 100);
 
                     const startTime = Date.now();
                     
@@ -557,15 +528,15 @@ class VideosModule {
         uploadProgress.style.display = 'block';
 
         try {
-            const chunkSize = 10 * 1024 * 1024; // 10MB
-            const concurrency = 3; // 3 uploads simultâneos
+            const chunkSize = 20 * 1024 * 1024; // 20MB
+            const concurrency = 4; // 4 uploads simultâneos
             const totalChunks = Math.ceil(file.size / chunkSize);
             const parts = [];
             const startTime = Date.now();
             let uploadedBytes = 0;
             let completedChunks = 0;
 
-            progressDiv.querySelector('.upload-status').textContent = `Enviando ${totalChunks} partes (3 simultâneas)...`;
+            progressDiv.querySelector('.upload-status').textContent = `Enviando ${totalChunks} partes (4 simultâneas)...`;
 
             // Função para upload de um chunk
             const uploadChunk = async (chunkIndex) => {
@@ -664,77 +635,6 @@ class VideosModule {
             'ogv': 'video/ogg'
         };
         return mimeTypes[ext] || 'video/mp4';
-    }
-
-    async displayFoldersOnly() {
-        const videoGrid = document.getElementById('videoGrid');
-        const loadingContainer = document.getElementById('loadingContainer');
-        
-        loadingContainer.style.display = 'flex';
-        
-        try {
-            const response = await window.api.getVideos(true); // Força hierarquia
-            
-            if (response.success && response.hierarchy) {
-                let html = '';
-                
-                // Mostra apenas pastas (não arquivos da raiz)
-                Object.keys(response.hierarchy).forEach(folderName => {
-                    if (folderName === 'root') return; // Pula arquivos da raiz
-                    
-                    const folder = response.hierarchy[folderName];
-                    html += `
-                        <div class="video-card folder-card" onclick="window.videosModule.openFolder('${folderName}')">
-                            <div class="folder-thumbnail">
-                                <div class="folder-icon">🗂️</div>
-                                <div class="folder-label">PASTA</div>
-                            </div>
-                            <div class="video-info">
-                                <h3>🗂️ ${folderName}</h3>
-                                <p>${folder.files.length} arquivos</p>
-                                <small>Clique para abrir</small>
-                            </div>
-                            <div class="video-actions">
-                                <button class="delete-btn folder-delete" onclick="event.stopPropagation(); window.videosModule.deleteFolderHierarchy('${folderName}')" title="Deletar pasta">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                videoGrid.innerHTML = html || '<p>Nenhuma pasta encontrada. Faça upload de arquivos em pastas!</p>';
-            }
-        } catch (error) {
-            console.error('Erro ao carregar pastas:', error);
-            videoGrid.innerHTML = '<p>Erro ao carregar pastas</p>';
-        } finally {
-            loadingContainer.style.display = 'none';
-        }
-    }
-    
-    async openFolder(folderName) {
-        console.log(`📁 Abrindo pasta: ${folderName}`);
-        
-        try {
-            const response = await window.api.getVideos(true);
-            
-            if (response.success && response.hierarchy && response.hierarchy[folderName]) {
-                const folder = response.hierarchy[folderName];
-                this.displayItems(folder.files);
-                
-                // Adiciona botão voltar
-                const videoGrid = document.getElementById('videoGrid');
-                const backButton = `
-                    <div class="back-button" onclick="window.videosModule.displayFoldersOnly()">
-                        ← Voltar para Pastas
-                    </div>
-                `;
-                videoGrid.innerHTML = backButton + videoGrid.innerHTML;
-            }
-        } catch (error) {
-            console.error('Erro ao abrir pasta:', error);
-        }
     }
 
     formatFileSize(bytes) {

@@ -40,7 +40,7 @@ class AuthModule {
     async handleLogin() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        // const mfaToken = document.getElementById('mfaToken').value;
+        const mfaToken = document.getElementById('mfaToken').value;
         const errorDiv = document.getElementById('errorMessage');
         const loginBtn = document.querySelector('.login-btn');
 
@@ -48,7 +48,7 @@ class AuthModule {
         errorDiv.textContent = '';
 
         try {
-            const response = await window.api.login(email, password);
+            const response = await window.api.login(email, password, mfaToken);
             
             if (response.success) {
                 errorDiv.textContent = '';

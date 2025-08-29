@@ -2,101 +2,33 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Streaming SStech</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
     <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/player.css">
     <link rel="stylesheet" href="styles/messages.css">
     <link rel="stylesheet" href="styles/layout.css">
+    <link rel="stylesheet" href="styles/player-center.css">
     <link rel="stylesheet" href="styles/upload.css">
-    <style>
-        .test-banner {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            font-weight: bold;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        body { margin-top: 70px; }
-        .test-controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            z-index: 9998;
-        }
-        .test-controls button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            margin: 2px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-        .upload-area.clickable {
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .upload-area.clickable:hover {
-            background-color: rgba(255,255,255,0.05);
-        }
-        .video-card {
-            position: relative;
-        }
-        .video-actions {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .video-card:hover .video-actions {
-            opacity: 1;
-        }
-        .delete-btn {
-            background: rgba(220, 53, 69, 0.8);
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .delete-btn:hover {
-            background: rgba(220, 53, 69, 1);
-        }
-    </style>
+    <link rel="stylesheet" href="styles/folders.css">
+    <link rel="stylesheet" href="styles/progress.css">
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
+    <!-- HLS.js for .ts support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="styles/hierarchy.css">
+    <link rel="stylesheet" href="styles/upload-options.css">
+    <link rel="stylesheet" href="styles/mobile-first.css">
+    <link rel="stylesheet" href="styles/layout-fix.css">
+    <link rel="stylesheet" href="styles/login-fix.css">
+    <script src="js/touch.js"></script>
 </head>
 <body>
-    <div class="test-banner">
-        🧪 AMBIENTE DE TESTE COMPLETO - Simula 100% AWS | Upload Real + Player Funcional
-    </div>
-
-    <div class="test-controls">
-        <div>🔧 Controles de Teste:</div>
-        <button onclick="clearTestData()">Limpar Dados</button>
-        <button onclick="addSampleVideo()">Adicionar Vídeo Exemplo</button>
-        <button onclick="showTestLog()">Ver Log</button>
-    </div>
-
     <div id="app">
         <!-- Login Screen -->
         <div id="loginScreen" class="screen active">
@@ -108,30 +40,30 @@
                 
                 <form id="loginForm" class="login-form">
                     <div class="input-group">
-                        <input type="email" id="email" placeholder="Email" required value="sergiosenaadmin@sstech">
+                        <input type="email" id="email" placeholder="Email" required>
                         <span class="input-icon">📧</span>
                     </div>
                     
                     <div class="input-group">
-                        <input type="password" id="password" placeholder="Senha" required value="sergiosena">
+                        <input type="password" id="password" placeholder="Senha" required>
                         <span class="input-icon">🔒</span>
                     </div>
                     
                     <div class="input-group">
-                        <input type="text" id="mfaToken" placeholder="Código MFA" required maxlength="6" value="123456">
+                        <input type="text" id="mfaToken" placeholder="Código MFA" required maxlength="6">
                         <span class="input-icon">🔐</span>
                     </div>
                     
                     <div class="remember-me">
                         <label class="checkbox-container">
-                            <input type="checkbox" id="rememberMe" checked>
+                            <input type="checkbox" id="rememberMe">
                             <span class="checkmark"></span>
                             Lembrar login e senha
                         </label>
                     </div>
                     
                     <button type="submit" class="login-btn">
-                        <span>Entrar - Teste Completo</span>
+                        <span>Entrar</span>
                         <div class="loading-spinner"></div>
                     </button>
                     
@@ -183,10 +115,10 @@
                     
                     <div class="setup-step hidden" id="step3">
                         <h3>Passo 3: Verificar</h3>
-                        <p>Digite qualquer código de 6 dígitos:</p>
+                        <p>Digite o código de 6 dígitos do app:</p>
                         <form id="verifyMfaForm">
                             <div class="input-group">
-                                <input type="text" id="verifyToken" placeholder="123456" maxlength="6" required value="123456">
+                                <input type="text" id="verifyToken" placeholder="000000" maxlength="6" required>
                             </div>
                             <button type="submit" class="verify-btn">Verificar e Ativar</button>
                         </form>
@@ -216,7 +148,8 @@
                         <button id="searchBtn">🔍</button>
                     </div>
                     <div class="header-actions">
-                        <button class="action-btn" id="uploadToggle" title="Upload">📄</button>
+                        <button class="action-btn" id="showFoldersBtn" title="Mostrar Pastas">📊</button>
+                        <button class="action-btn" id="uploadToggle" title="Upload">⬆️</button>
                         <div class="view-controls">
                             <button class="view-btn active" data-view="grid">⊞</button>
                             <button class="view-btn" data-view="list">☰</button>
@@ -225,21 +158,29 @@
                 </div>
                 
                 <div class="upload-section" id="uploadSection">
-                    <div class="upload-options">
-                        <div class="upload-type-tabs">
-                            <button class="upload-tab active" data-type="files">📄 Arquivos</button>
-                            <button class="upload-tab" data-type="folder">📁 Pasta</button>
-                        </div>
-                    </div>
-                    
                     <div class="upload-area clickable" id="uploadArea">
-                        <div class="upload-icon" id="uploadIcon">📄</div>
-                        <h3 id="uploadTitle">Clique aqui ou arraste vídeos</h3>
-                        <p>ou <button class="browse-btn" id="browseBtn">procure em seu computador</button></p>
-                        <input type="file" id="fileInput" multiple accept="video/*" hidden>
-                        <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                        <div class="upload-icon">⬆️</div>
+                        <h3>Escolha o tipo de upload</h3>
+                        
+                        <div class="upload-options">
+                            <button class="upload-option-btn" id="uploadFilesBtn">
+                                <span class="option-icon">📄</span>
+                                <span class="option-text">Arquivos</span>
+                                <small>Selecionar vídeos individuais</small>
+                            </button>
+                            
+                            <button class="upload-option-btn" id="uploadFolderBtn">
+                                <span class="option-icon">📁</span>
+                                <span class="option-text">Pasta</span>
+                                <small>Selecionar pasta com vídeos</small>
+                            </button>
+                        </div>
+                        
+                        <input type="file" id="fileInput" multiple accept="video/*,.ts,.m2ts,.mts,.vob,.ogv" hidden>
+                        <input type="file" id="folderInput" webkitdirectory multiple hidden>
+                        
                         <div class="upload-info">
-                            <small id="uploadInfo">Teste com vídeos reais - Player funcional</small>
+                            <small>Formatos suportados: MP4, WebM, AVI, MOV (máx. 5GB cada)</small>
                         </div>
                     </div>
                     
@@ -263,40 +204,15 @@
         </div>
     </div>
 
-    <!-- Scripts dos módulos - Versão Teste -->
-    <script src="modules/api-test.js"></script>
-    <script src="modules/auth.js"></script>
+    <!-- Scripts dos módulos -->
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+    <!-- Video.js JS -->
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    <script src="modules/api.js"></script>
+    <script src="modules/auth-cognito-working.js"></script>
     <script src="modules/videos.js"></script>
     <script src="modules/player.js"></script>
     <script src="modules/app.js"></script>
-
-    <script>
-        // Funções de controle de teste
-        function clearTestData() {
-            localStorage.clear();
-            location.reload();
-        }
-
-        function addSampleVideo() {
-            const videos = JSON.parse(localStorage.getItem('testVideos')) || [];
-            videos.push({
-                key: 'videos/sample-' + Date.now(),
-                name: 'video-exemplo.mp4',
-                size: 1024000,
-                lastModified: new Date().toISOString(),
-                url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
-            });
-            localStorage.setItem('testVideos', JSON.stringify(videos));
-            if (window.videosModule) window.videosModule.loadVideos();
-        }
-
-        function showTestLog() {
-            console.log('📊 DADOS DE TESTE:', {
-                token: localStorage.getItem('authToken'),
-                videos: JSON.parse(localStorage.getItem('testVideos') || '[]'),
-                userEmail: localStorage.getItem('userEmail')
-            });
-        }
-    </script>
 </body>
 </html>

@@ -10,8 +10,8 @@ class VideoStreamingApp {
 
     initModules() {
         // Inicializar módulos na ordem correta
-        window.api = new APIModule();
-        window.authModule = new AuthModule();
+        window.api = new APICognitoModule();
+        window.authModule = new AuthCognitoDebug();
         window.videosModule = new VideosModule();
         window.playerModule = new PlayerModule();
     }

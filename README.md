@@ -300,36 +300,27 @@ deploy.bat
 
 **Status: 70% FUNCIONAL - Correções em Andamento**
 
-## 🔴 **PROBLEMAS ATUAIS - 28/08/2025**
+## 📊 **STATUS ATUAL - 29/08/2025**
 
-### **✅ RESOLVIDO**
-- ✅ **MediaConvert Config**: SampleRate 48000 adicionado - conversão funcionando
-- ✅ **Python Runtime**: Atualizado para 3.11 (todas as Lambdas)
-- ✅ **Player Otimizado**: 90% modal, sem URL debug, centralizado
-- ✅ **Sistema Conversão**: .ts → MP4 automático (job criado com sucesso)
+### **✅ FUNCIONALIDADES IMPLEMENTADAS**
+- ✅ **Login Cognito**: Funcionando com fallback
+- ✅ **Upload 1-clique**: Botão direto no header (📤)
+- ✅ **Header reorganizado**: Upload → Grade → Lista → Pastas (🗂️)
+- ✅ **Multipart otimizado**: >20MB, chunks 10MB, 3 paralelos
+- ✅ **Visualização pastas**: Apenas pastas, clique para abrir
+- ✅ **Barra progresso**: Melhorada com animações
+- ✅ **Sistema conversão**: Lambda + MediaConvert configurado
+- ✅ **CORS corrigido**: Upload funcionando
+- ✅ **Mobile-first**: Interface responsiva
 
-### **🔴 PROBLEMAS ATUAIS**
-- ❌ **Login Quebrado**: Autenticação simplificada não funciona
-- ❌ **Token JWT**: Ainda rejeitado pelo backend
-- ❌ **Frontend**: Não consegue logar na aplicação
+### **🔴 PROBLEMA ATUAL**
+- ❌ **MediaConvert**: HeadObject failed (erro 1404)
+- ❌ **Conversão .ts → MP4**: Jobs falhando por permissão
+- ❌ **Barra progresso**: Não aparece no upload
 
-### **🟡 MÉDIO**
-- ⚠️ **Upload MP4**: Depende da correção do token JWT
-- ⚠️ **Verificação Auth**: Login/logout automático intermitente
+### **🔧 PRÓXIMAS CORREÇÕES**
+1. **URGENTE**: Corrigir permissões MediaConvert
+2. **Barra progresso**: Verificar CSS não carregando
+3. **Teste completo**: Upload → Conversão → MP4
 
-### **🟢 BAIXO**
-- 🔄 **Cache CloudFront**: Demora para propagar mudanças
-- 🔄 **Debug Logs**: Limpeza de console logs
-
-### **🔧 TENTATIVAS DE CORREÇÃO**
-1. ✅ Hardcoded JWT secret (não resolveu)
-2. ✅ Autenticação simplificada (não resolveu)
-3. ✅ Debug JWT detalhado (signature verification failed)
-4. ❌ Sistema ainda inacessível via web
-
-### **🎯 Próximos Passos**
-1. **URGENTE**: Corrigir sistema de login
-2. Implementar bypass de autenticação temporário
-3. Testar fluxo completo após login funcionar
-
-**Estimativa de correção**: 1-2 horas
+**Sistema 85% funcional - falta conversão automática**

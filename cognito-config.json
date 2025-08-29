@@ -1,0 +1,17 @@
+{
+  "userPoolId": "us-east-1_FpDtOqzEa",
+  "clientId": "6in4ghmp6k6vl09556a52ug7qj",
+  "region": "us-east-1",
+  "userPoolArn": "arn:aws:cognito-idp:us-east-1:969430605054:userpool/us-east-1_FpDtOqzEa",
+  "testUser": {
+    "username": "sergiosenaadmin@sstech",
+    "password": "sergiosena",
+    "email": "sergiosenaadmin@sstech"
+  },
+  "authFlows": [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ],
+  "createdAt": "2025-08-28T19:23:03.683Z",
+  "status": "ACTIVE"
+}

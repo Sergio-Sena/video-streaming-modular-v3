@@ -1,0 +1,25 @@
+{
+  "Name": "video-streaming-cors-policy",
+  "Comment": "CORS policy for video streaming",
+  "CorsConfig": {
+    "AccessControlAllowCredentials": false,
+    "AccessControlAllowHeaders": {
+      "Quantity": 4,
+      "Items": ["*", "Authorization", "Content-Type", "Range"]
+    },
+    "AccessControlAllowMethods": {
+      "Quantity": 3,
+      "Items": ["GET", "HEAD", "OPTIONS"]
+    },
+    "AccessControlAllowOrigins": {
+      "Quantity": 1,
+      "Items": ["*"]
+    },
+    "AccessControlExposeHeaders": {
+      "Quantity": 2,
+      "Items": ["ETag", "Content-Range"]
+    },
+    "AccessControlMaxAgeSec": 86400,
+    "OriginOverride": true
+  }
+}

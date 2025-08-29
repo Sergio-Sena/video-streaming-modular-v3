@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Cognito - Video Streaming</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/login-fix.css">
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>🎬 Video Streaming SStech</h1>
+                <p>Teste Amazon Cognito</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <input type="email" id="email" placeholder="Email" required 
+                           value="sergiosenaadmin@sstech">
+                </div>
+                
+                <div class="form-group">
+                    <input type="password" id="password" placeholder="Senha" required 
+                           value="sergiosena">
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    <div class="loading-spinner" style="display: none;"></div>
+                    <span>Entrar com Cognito</span>
+                </button>
+                
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tela Principal -->
+    <div id="mainScreen" class="screen">
+        <div class="main-container">
+            <div class="header">
+                <h1>🎬 Logado com Cognito!</h1>
+                <div class="user-info">
+                    <span id="userEmail"></span>
+                    <button id="logoutBtn" class="logout-btn">Sair</button>
+                </div>
+            </div>
+            
+            <div class="content">
+                <h2>✅ Amazon Cognito Funcionando!</h2>
+                <p><strong>User Pool ID:</strong> us-east-1_FpDtOqzEa</p>
+                <p><strong>Client ID:</strong> 6in4ghmp6k6vl09556a52ug7qj</p>
+                <p><strong>Usuário:</strong> sergiosenaadmin@sstech</p>
+                <p><strong>Status:</strong> Autenticado via Cognito</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+    
+    <!-- Módulo Cognito -->
+    <script src="modules/auth-cognito-working.js"></script>
+    
+    <script>
+        // Inicializar módulo de autenticação
+        const authModule = new AuthCognitoWorking();
+        
+        // Verificar autenticação ao carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            authModule.checkAuth();
+        });
+    </script>
+</body>
+</html>

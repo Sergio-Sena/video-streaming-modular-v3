@@ -1,0 +1,36 @@
+{
+  "CallerReference": "video-streaming-cognito-2025",
+  "Comment": "Video Streaming with Cognito - New CDN",
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-video-streaming-cognito",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "MinTTL": 0,
+    "DefaultTTL": 86400,
+    "MaxTTL": 31536000,
+    "Compress": true,
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": {
+        "Forward": "none"
+      }
+    },
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    }
+  },
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3-video-streaming-cognito",
+        "DomainName": "BUCKET_NAME.s3.amazonaws.com",
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        }
+      }
+    ]
+  },
+  "Enabled": true,
+  "PriceClass": "PriceClass_100"
+}

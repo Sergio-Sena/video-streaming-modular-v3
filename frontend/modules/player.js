@@ -55,19 +55,26 @@ class PlayerModule {
             videoUrl = videoUrl.replace('videos.sstechnologies-cloud.com', 'd2we88koy23cl4.cloudfront.net');
         }
         
+        // Garante que a URL está correta
+        if (!videoUrl.startsWith('http')) {
+            videoUrl = `https://d2we88koy23cl4.cloudfront.net/${videoUrl}`;
+        }
+        
+        console.log('🎬 URL final do vídeo:', videoUrl);
+        
         console.log('Iniciando player para:', videoName, 'URL:', videoUrl);
         
         this.modal.innerHTML = `
             <div class="modal-content">
                 <button class="close-btn" onclick="window.playerModule.close()">×</button>
                 <div class="video-container">
-                    <video-js id="videoPlayer" 
-                             class="vjs-default-skin" 
-                             controls 
-                             preload="auto" 
-                             width="100%" 
-                             height="100%" 
-                             data-setup='{}'>
+                    <video id="videoPlayer" 
+                           class="video-js vjs-default-skin" 
+                           controls 
+                           preload="auto" 
+                           width="100%" 
+                           height="100%" 
+                           data-setup='{"fluid": true, "responsive": true}'>
                         <source src="${videoUrl}" type="video/mp4">
                         <p class="vjs-no-js">
                             Para ver este vídeo, ative o JavaScript e considere atualizar para um
@@ -75,7 +82,7 @@ class PlayerModule {
                                 navegador que suporte HTML5 video
                             </a>.
                         </p>
-                    </video-js>
+                    </video>
                 </div>
             </div>
         `;
@@ -89,10 +96,15 @@ class PlayerModule {
                     playbackRates: [0.5, 1, 1.25, 1.5, 2],
                     controls: true,
                     preload: 'auto',
+                    width: '100%',
+                    height: '100%',
+                    techOrder: ['html5'],
                     html5: {
                         vhs: {
                             overrideNative: true
-                        }
+                        },
+                        nativeVideoTracks: false,
+                        nativeAudioTracks: false
                     }
                 });
                 
@@ -261,20 +273,40 @@ class PlayerModule {
     }
     
     setupHTMLVideo(videoUrl, videoName) {
-        const video = document.getElementById('videoPlayer');
-        if (video && typeof video.load === 'function') {
-            console.log('Configurando HTML5 video');
-            video.src = videoUrl;
-            video.load();
+        console.log('🎬 Configurando HTML5 video:', videoUrl);
+        
+        // Remove Video.js e cria elemento HTML5 simples
+        const container = document.querySelector('.video-container');
+        if (container) {
+            container.innerHTML = `
+                <video id="videoPlayerHTML5" 
+                       controls 
+                       preload="auto" 
+                       width="100%" 
+                       height="100%"
+                       crossorigin="anonymous">
+                    <source src="${videoUrl}" type="video/mp4">
+                    <p>Seu navegador não suporta o elemento video.</p>
+                </video>
+            `;
             
-            // Event listeners para debug
-            video.addEventListener('loadstart', () => console.log('HTML5: Carregamento iniciado'));
-            video.addEventListener('error', (e) => {
-                console.error('HTML5 Error:', e);
-                console.error('Video error details:', video.error);
-            });
-        } else {
-            console.error('Elemento video não encontrado ou inválido');
+            const video = document.getElementById('videoPlayerHTML5');
+            if (video) {
+                video.addEventListener('loadstart', () => console.log('✅ HTML5: Carregamento iniciado'));
+                video.addEventListener('canplay', () => console.log('✅ HTML5: Pode reproduzir'));
+                video.addEventListener('error', (e) => {
+                    console.error('❌ HTML5 Error:', e);
+                    console.error('Video error details:', video.error);
+                    
+                    // Tenta URL direta do S3 como fallback
+                    const s3Url = videoUrl.replace('d2we88koy23cl4.cloudfront.net', 'video-streaming-sstech-eaddf6a1.s3.amazonaws.com');
+                    console.log('🔄 Tentando URL S3 direta:', s3Url);
+                    video.src = s3Url;
+                    video.load();
+                });
+                
+                video.load();
+            }
         }
     }
     

@@ -5,7 +5,6 @@
 class VideosModule {
     constructor() {
         this.showHierarchy = false;
-        this.currentFolderPath = '';
         this.initEventListeners();
     }
 
@@ -94,16 +93,11 @@ class VideosModule {
         loadingContainer.style.display = 'flex';
         
         try {
-            let response;
-            if (this.showHierarchy) {
-                response = await this.loadHierarchyView(this.currentFolderPath);
-            } else {
-                response = await window.apiModule.getVideos(false);
-            }
+            const response = await window.api.getVideos(this.showHierarchy);
             
             if (response.success) {
-                if (this.showHierarchy) {
-                    this.displayFolderNavigation(response);
+                if (this.showHierarchy && response.hierarchy) {
+                    this.displayHierarchy(response.hierarchy);
                 } else {
                     this.displayItems(response.items || response.videos || []);
                 }
@@ -115,11 +109,6 @@ class VideosModule {
             loadingContainer.style.display = 'none';
         }
     }
-    
-    async loadHierarchyView(path = '') {
-        const url = `/videos?hierarchy=true${path ? `&path=${encodeURIComponent(path)}` : ''}`;
-        return await window.apiModule.request(url, { method: 'GET' });
-    }
 
     displayItems(items) {
         const videoGrid = document.getElementById('videoGrid');
@@ -130,129 +119,48 @@ class VideosModule {
         }
 
         videoGrid.innerHTML = items.map((item, index) => {
-            return `
-                <div class="video-card">
-                    <div class="video-thumbnail" onclick="window.playerModule.play('${item.url}', '${item.name}')">
-                        <video preload="metadata">
-                            <source src="${item.url}" type="video/mp4">
-                        </video>
-                        <div class="play-button">▶</div>
+            if (item.type === 'folder') {
+                return `
+                    <div class="video-card folder-card">
+                        <div class="folder-thumbnail">
+                            <div class="folder-icon">📁</div>
+                            <div class="folder-label">PASTA</div>
+                        </div>
+                        <div class="video-info">
+                            <h3>📁 ${item.name}</h3>
+                            <p>Pasta de vídeos</p>
+                            <small>Clique para abrir</small>
+                        </div>
+                        <div class="video-actions">
+                            <button class="delete-btn folder-delete" onclick="window.videosModule.deleteFolder('${item.key}', '${item.name}')" title="Deletar pasta">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
-                    <div class="video-info">
-                        <h3>${item.name}</h3>
-                        <p>${this.formatFileSize(item.size)}</p>
-                        <small>${item.lastModified ? new Date(item.lastModified).toLocaleDateString() : ''}</small>
+                `;
+            } else {
+                return `
+                    <div class="video-card">
+                        <div class="video-thumbnail" onclick="window.playerModule.play('${item.url}', '${item.name}')">
+                            <video preload="metadata">
+                                <source src="${item.url}" type="video/mp4">
+                            </video>
+                            <div class="play-button">▶</div>
+                        </div>
+                        <div class="video-info">
+                            <h3>${item.name}</h3>
+                            <p>${this.formatFileSize(item.size)}</p>
+                            <small>${item.lastModified ? new Date(item.lastModified).toLocaleDateString() : ''}</small>
+                        </div>
+                        <div class="video-actions">
+                            <button class="delete-btn" onclick="window.videosModule.deleteVideo('${item.key}', ${index})" title="Deletar vídeo">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
-                    <div class="video-actions">
-                        <button class="delete-btn" onclick="window.videosModule.deleteVideo('${item.key}', ${index})" title="Deletar vídeo">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }).join('');
-    }
-    
-    displayFolderNavigation(response) {
-        const videoGrid = document.getElementById('videoGrid');
-        const { folders = [], files = [], currentPath = '' } = response;
-        
-        let html = '<div class="folder-navigation">';
-        
-        // Breadcrumb
-        html += '<div class="folder-breadcrumb">';
-        html += '<span class="breadcrumb-item" onclick="window.videosModule.navigateToFolder(\'\')">📁 Raiz</span>';
-        
-        if (currentPath) {
-            const pathParts = currentPath.split('/');
-            let buildPath = '';
-            pathParts.forEach((part, index) => {
-                buildPath += (buildPath ? '/' : '') + part;
-                const isLast = index === pathParts.length - 1;
-                html += '<span class="breadcrumb-separator">/</span>';
-                if (isLast) {
-                    html += `<span class="breadcrumb-item current">${part}</span>`;
-                } else {
-                    html += `<span class="breadcrumb-item" onclick="window.videosModule.navigateToFolder('${buildPath}')">${part}</span>`;
-                }
-            });
-        }
-        html += '</div>';
-        
-        // Conteúdo da pasta
-        html += '<div class="folder-content">';
-        
-        // Botão voltar
-        if (currentPath) {
-            const parentPath = currentPath.split('/').slice(0, -1).join('/');
-            html += `
-                <div class="folder-item back-button" onclick="window.videosModule.navigateToFolder('${parentPath}')">
-                    <div class="folder-icon">⬅️</div>
-                    <div class="folder-info">
-                        <div class="folder-name">.. (Voltar)</div>
-                        <div class="folder-details">Pasta anterior</div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Pastas
-        folders.forEach(folder => {
-            html += `
-                <div class="folder-item" ondblclick="window.videosModule.navigateToFolder('${folder.path}')">
-                    <div class="folder-icon">📁</div>
-                    <div class="folder-info">
-                        <div class="folder-name">${folder.name}</div>
-                        <div class="folder-details">Pasta</div>
-                    </div>
-                    <div class="folder-actions">
-                        <button class="folder-action-btn delete-btn" onclick="event.stopPropagation(); window.videosModule.deleteFolder('videos/${folder.path}/', '${folder.name}')" title="Deletar pasta">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Arquivos
-        files.forEach(file => {
-            html += `
-                <div class="folder-item" onclick="window.playerModule.play('${file.url}', '${file.name}')">
-                    <div class="folder-icon">🎥</div>
-                    <div class="folder-info">
-                        <div class="folder-name">${file.name}</div>
-                        <div class="folder-details">${this.formatFileSize(file.size)} • ${new Date(file.lastModified).toLocaleDateString()}</div>
-                    </div>
-                    <div class="folder-actions">
-                        <button class="folder-action-btn play-btn" onclick="event.stopPropagation(); window.playerModule.play('${file.url}', '${file.name}')" title="Reproduzir">
-                            ▶️
-                        </button>
-                        <button class="folder-action-btn delete-btn" onclick="event.stopPropagation(); window.videosModule.deleteVideo('${file.key}')" title="Deletar">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Pasta vazia
-        if (folders.length === 0 && files.length === 0) {
-            html += `
-                <div class="empty-folder">
-                    <div class="empty-folder-icon">📂</div>
-                    <p>Esta pasta está vazia</p>
-                </div>
-            `;
-        }
-        
-        html += '</div></div>';
-        
-        videoGrid.innerHTML = html;
-    }
-    
-    async navigateToFolder(path) {
-        this.currentFolderPath = path;
-        await this.loadVideos();
     }
 
     async handleFileUpload(files) {
@@ -527,14 +435,13 @@ class VideosModule {
 
     toggleHierarchyView() {
         this.showHierarchy = !this.showHierarchy;
-        this.currentFolderPath = ''; // Reset para raiz
         const btn = document.getElementById('showFoldersBtn');
         
         if (this.showHierarchy) {
-            btn.classList.add('active');
+            btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
             btn.title = 'Ocultar Pastas';
         } else {
-            btn.classList.remove('active');
+            btn.style.background = '';
             btn.title = 'Mostrar Pastas';
         }
         

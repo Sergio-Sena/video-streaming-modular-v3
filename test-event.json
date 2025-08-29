@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "video-streaming-sstech-eaddf6a1"
+        },
+        "object": {
+          "key": "videos/test-conversion-123.ts"
+        }
+      }
+    }
+  ]
+}

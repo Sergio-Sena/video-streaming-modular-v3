@@ -1,6 +1,6 @@
 {
   "restApiId": "4y3erwjgak",
-  "resourceId": "hcwmgt",
+  "resourceId": "hcwmgt", 
   "httpMethod": "GET",
   "patchOperations": [
     {

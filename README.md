@@ -149,7 +149,23 @@ deploy.bat
 - ✅ Z-index e posicionamento corrigidos
 - ✅ Suporte completo mobile/tablet/desktop
 
-### **FASE 9: Conversão Automática de Vídeos** ⚠️
+### **FASE 9: Sistema de Upload Avançado** ✅
+- ✅ Modal de upload tipo gerenciador de arquivos
+- ✅ Seleção múltipla de arquivos e pastas
+- ✅ Navegação hierárquica com duplo clique
+- ✅ Breadcrumb e botão voltar
+- ✅ Preview de arquivos selecionados
+- ✅ Interface responsiva e intuitiva
+
+### **FASE 10: Navegação "Mostrar Pastas"** ✅
+- ✅ Toggle para visualização hierárquica
+- ✅ Navegação tipo Windows Explorer
+- ✅ Estrutura de pastas preservada
+- ✅ Duplo clique para entrar em pastas
+- ✅ Breadcrumb navegável
+- ✅ Ações play/delete por item
+
+### **FASE 11: Conversão Automática de Vídeos** ⚠️
 - ✅ AWS MediaConvert integrado
 - ✅ Bucket temporário para conversão
 - ✅ Lambda trigger automático
@@ -185,12 +201,20 @@ cd video-streaming-modular
 deploy.bat
 ```
 
-### **Upload de Vídeos**
-1. **Arquivos individuais**: Clique ⬆️ → 📄 Arquivos (seleção múltipla)
-2. **Pastas completas**: Clique ⬆️ → 📁 Pasta (múltiplas pastas)
-3. **Upload automático**: ≤50MB (simples) | >50MB (multipart)
-4. **Visualizar hierarquia**: Clique 📊 "Mostrar Pastas"
-5. **Deletar itens**: Hover sobre item → 🗑️
+### **Upload Avançado de Vídeos**
+1. **Abrir Modal**: Clique no botão ⬆️ Upload
+2. **Selecionar Arquivos**: 📄 Arquivos individuais (múltiplos)
+3. **Selecionar Pastas**: 📁 Pastas completas (múltiplas)
+4. **Navegar**: Duplo clique em pastas para explorar
+5. **Multi-seleção**: Acumular arquivos + pastas
+6. **Upload**: Botão "⬆️ Fazer Upload"
+
+### **Navegação Hierárquica**
+1. **Ativar**: Clique 📊 "Mostrar Pastas"
+2. **Navegar**: Duplo clique em pastas
+3. **Voltar**: Clique no breadcrumb ou botão ⬅️
+4. **Reproduzir**: Clique simples em vídeos
+5. **Deletar**: Botão 🗑️ em cada item
 
 ### **Desenvolvimento Local**
 ```bash
@@ -223,14 +247,14 @@ deploy.bat
 - **Senha**: sergiosena
 - **MFA**: 123456 (fixo para testes)
 
-### **Funcionalidades Ativas** (Testadas 28/08/2025):
+### **Funcionalidades Ativas** (Testadas 29/08/2025):
 - 🔐 Login com MFA fixo (123456 para testes)
-- 📤 Upload simples: ≤50MB (1 requisição)
+- 📤 **Upload Avançado**: Modal tipo gerenciador de arquivos
+- 📁 **Seleção Inteligente**: Arquivos individuais + pastas completas
+- 🔄 **Multi-seleção**: Acumulativa com preview
 - ⚡ Upload multipart: >50MB (chunks 20MB, 4 paralelos)
-- 📁 Upload de arquivos múltiplos (seleção múltipla)
-- 📁 Upload de pastas múltiplas (preserva estrutura)
-- 🔄 Auto-detecção do método de upload
-- 📊 Visualização hierárquica (toggle)
+- 📊 **Navegação Hierárquica**: Toggle "Mostrar Pastas"
+- 🗂️ **Explorer**: Duplo clique, breadcrumb, voltar
 - 🗑️ Deletar vídeos e pastas (recursivo)
 - 🎥 **Player Video.js + HLS.js** (suporte .ts nativo)
 - 📹 **14 Extensões Suportadas** (.mp4, .ts, .mkv, .avi, etc.)
@@ -298,29 +322,33 @@ deploy.bat
 - **Responsivo**: Suporte 320px-1440px
 - **Mobile-First**: Layout otimizado para touch
 
-**Status: 70% FUNCIONAL - Correções em Andamento**
+**Status: 95% FUNCIONAL - Sistema Completo Operacional**
 
 ## 📊 **STATUS ATUAL - 29/08/2025**
 
-### **✅ FUNCIONALIDADES IMPLEMENTADAS**
-- ✅ **Login Cognito**: Funcionando com fallback
-- ✅ **Upload 1-clique**: Botão direto no header (📤)
-- ✅ **Header reorganizado**: Upload → Grade → Lista → Pastas (🗂️)
-- ✅ **Multipart otimizado**: >20MB, chunks 10MB, 3 paralelos
-- ✅ **Visualização pastas**: Apenas pastas, clique para abrir
-- ✅ **Barra progresso**: Melhorada com animações
-- ✅ **Sistema conversão**: Lambda + MediaConvert configurado
-- ✅ **CORS corrigido**: Upload funcionando
-- ✅ **Mobile-first**: Interface responsiva
+### **✅ CONVERSÃO AUTOMÁTICA IMPLEMENTADA**
+- ✅ **Trigger S3**: Funcionando (detecta uploads .ts)
+- ✅ **Lambda MediaConvert**: Executando sem erros
+- ✅ **Permissões IAM**: MediaConvertS3Access policy criada
+- ✅ **Jobs MediaConvert**: Criados com sucesso (COMPLETE)
+- ✅ **Configuração AAC**: CodingMode corrigido
+- ✅ **Arquivo convertido**: `converted/nome_converted.mp4`
+- ✅ **Trigger automático**: S3 Event → Lambda funcionando
 
-### **🔴 PROBLEMA ATUAL**
-- ❌ **MediaConvert**: HeadObject failed (erro 1404)
-- ❌ **Conversão .ts → MP4**: Jobs falhando por permissão
-- ❌ **Barra progresso**: Não aparece no upload
+### **🎯 FLUXO DE CONVERSÃO FUNCIONANDO**
+1. **Upload .ts** → Bucket principal (`videos/`)
+2. **S3 Event** → Dispara Lambda `video-auto-convert`
+3. **Lambda** → Cria job MediaConvert
+4. **MediaConvert** → Converte .ts para MP4
+5. **Arquivo final** → Salvo em `converted/nome_converted.mp4`
 
-### **🔧 PRÓXIMAS CORREÇÕES**
-1. **URGENTE**: Corrigir permissões MediaConvert
-2. **Barra progresso**: Verificar CSS não carregando
-3. **Teste completo**: Upload → Conversão → MP4
+### **📁 LOCALIZAÇÃO DOS ARQUIVOS**
+- **Original**: `videos/arquivo.ts` (visível na app)
+- **Convertido**: `converted/arquivo_converted.mp4` (não visível na app)
 
-**Sistema 85% funcional - falta conversão automática**
+### **🔧 PRÓXIMO PASSO**
+- **Implementar movimentação**: MP4 de `converted/` → `videos/`
+- **Deletar original**: Remover arquivo .ts após conversão
+- **Player automático**: MP4 aparece na listagem da app
+
+**Sistema 90% funcional - conversão automática OK, falta integração final**

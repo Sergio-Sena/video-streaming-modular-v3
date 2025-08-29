@@ -1,0 +1,22 @@
+{
+  "restApiId": "4y3erwjgak",
+  "resourceId": "hcwmgt",
+  "httpMethod": "OPTIONS",
+  "patchOperations": [
+    {
+      "op": "replace",
+      "path": "/methodIntegration/integrationResponses/200/responseParameters/method.response.header.Access-Control-Allow-Origin",
+      "value": "'*'"
+    },
+    {
+      "op": "replace", 
+      "path": "/methodIntegration/integrationResponses/200/responseParameters/method.response.header.Access-Control-Allow-Headers",
+      "value": "'Content-Type,Authorization,X-Requested-With'"
+    },
+    {
+      "op": "replace",
+      "path": "/methodIntegration/integrationResponses/200/responseParameters/method.response.header.Access-Control-Allow-Methods", 
+      "value": "'GET,POST,DELETE,OPTIONS'"
+    }
+  ]
+}

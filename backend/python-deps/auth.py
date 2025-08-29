@@ -1,5 +1,5 @@
 import json
-import hashlib
+import bcrypt
 import jwt
 import pyotp
 import qrcode
@@ -23,7 +23,7 @@ def handler(event, context):
         action = body.get('action', 'login')
         
         if action == 'setup-mfa':
-            return setup_mfa()
+            return setup_mfa(origin)
         elif action == 'verify-mfa':
             return verify_mfa(body.get('mfaToken'), origin)
         else:
@@ -31,9 +31,9 @@ def handler(event, context):
             
     except Exception as e:
         print(f"Auth error: {e}")
-        return error_response('Erro interno', 500)
+        return error_response('Erro interno', origin if 'origin' in locals() else None, 500)
 
-def setup_mfa():
+def setup_mfa(origin):
     """Configura MFA e gera QR Code"""
     try:
         # Gera secret para MFA
@@ -103,9 +103,8 @@ def login(body, origin):
         if email != credentials['email']:
             return error_response('Email inválido', origin, 401)
         
-        # Verifica senha (hash simples para teste)
-        password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
-        if password_hash != credentials.get('passwordHash', hashlib.sha256('sergiosena'.encode('utf-8')).hexdigest()):
+        # Verifica senha
+        if not bcrypt.checkpw(password.encode('utf-8'), credentials['password'].encode('utf-8')):
             return error_response('Senha inválida', origin, 401)
         
         # Verifica MFA

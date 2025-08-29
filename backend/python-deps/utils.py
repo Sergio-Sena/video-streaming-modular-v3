@@ -1,28 +1,16 @@
 import json
 import boto3
+import bcrypt
 import jwt
 from datetime import datetime, timedelta
 
 # CORS headers para todas as respostas
-def get_cors_headers(origin):
-    allowed_origins = [
-        'https://videos.sstechnologies-cloud.com',
-        'http://localhost:8080',
-        'http://127.0.0.1:8080'
-    ]
-    
-    if origin in allowed_origins:
-        return {
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-            'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
-            'Content-Type': 'application/json'
-        }
-    
+def get_cors_headers(origin=None):
     return {
-        'Access-Control-Allow-Origin': 'https://videos.sstechnologies-cloud.com',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization', 
-        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Requested-With',
+        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS,DELETE,PUT',
+        'Access-Control-Max-Age': '86400',
         'Content-Type': 'application/json'
     }
 

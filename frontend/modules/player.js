@@ -65,7 +65,7 @@ class PlayerModule {
         console.log('Iniciando player para:', videoName, 'URL:', videoUrl);
         
         this.modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content" id="modalContent">
                 <button class="close-btn" onclick="window.playerModule.close()">×</button>
                 <div class="video-container">
                     <video id="videoPlayer" 
@@ -74,7 +74,8 @@ class PlayerModule {
                            preload="auto" 
                            width="100%" 
                            height="100%" 
-                           data-setup='{"fluid": true, "responsive": true}'>
+                           data-setup='{"fluid": true, "responsive": true}'
+                           onloadedmetadata="window.playerModule.detectOrientation(this)">
                         <source src="${videoUrl}" type="video/mp4">
                         <p class="vjs-no-js">
                             Para ver este vídeo, ative o JavaScript e considere atualizar para um
@@ -337,7 +338,8 @@ class PlayerModule {
                            width="100%" 
                            height="100%"
                            style="background: #000; outline: none;"
-                           crossorigin="anonymous">
+                           crossorigin="anonymous"
+                           onloadedmetadata="window.playerModule.detectOrientation(this)">
                         <source src="${videoUrl}" type="video/mp4">
                         <p>Seu navegador não suporta o elemento video.</p>
                     </video>
@@ -388,6 +390,24 @@ class PlayerModule {
         }
     }
     
+    detectOrientation(videoElement) {
+        const modalContent = document.getElementById('modalContent');
+        if (videoElement && modalContent) {
+            const width = videoElement.videoWidth;
+            const height = videoElement.videoHeight;
+            
+            console.log(`📐 Dimensões do vídeo: ${width}x${height}`);
+            
+            if (height > width) {
+                console.log('📱 Vídeo vertical detectado');
+                modalContent.classList.add('vertical-video');
+            } else {
+                console.log('📺 Vídeo horizontal detectado');
+                modalContent.classList.remove('vertical-video');
+            }
+        }
+    }
+
     getVideoMimeType(filename) {
         const ext = filename.toLowerCase().split('.').pop();
         const mimeTypes = {

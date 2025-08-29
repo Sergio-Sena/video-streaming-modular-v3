@@ -1,5 +1,25 @@
 import json
 import boto3
+import re
+import unicodedata
+import urllib.parse
+
+def sanitize_filename(filename):
+    """Sanitiza nome do arquivo removendo caracteres problemáticos"""
+    # Normalizar e remover acentos
+    filename = unicodedata.normalize('NFD', filename)
+    filename = ''.join(c for c in filename if unicodedata.category(c) != 'Mn')
+    
+    # Manter apenas caracteres seguros
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    
+    # Limpar múltiplos underscores
+    filename = re.sub(r'_+', '_', filename)
+    
+    # Remover underscores no início/fim
+    filename = filename.strip('_')
+    
+    return filename
 
 def handler(event, context):
     """Handler completo com upload"""
@@ -101,7 +121,7 @@ def get_upload_url(body, headers):
         folder_path = body.get('folderPath', '')
         
         # Sanitizar nome do arquivo
-        safe_filename = filename.replace(' ', '_').replace('[', '').replace(']', '')
+        safe_filename = sanitize_filename(filename)
         
         # Definir chave do objeto
         if folder_path:

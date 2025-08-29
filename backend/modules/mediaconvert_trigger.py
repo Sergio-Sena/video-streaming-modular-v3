@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+import urllib.parse
 
 def handler(event, context):
     """Trigger MediaConvert quando arquivo é enviado para bucket temp"""
@@ -36,8 +37,10 @@ def handler(event, context):
             "Role": "arn:aws:iam::969430605054:role/MediaConvertRole",
             "Settings": {
                 "Inputs": [{
-                    "FileInput": f"s3://{bucket}/{input_key}",
-                    "VideoSelector": {},
+                    "FileInput": f"s3://{bucket}/{urllib.parse.quote(input_key, safe='/')}",
+                    "VideoSelector": {
+                        "Rotate": "AUTO"
+                    },
                     "AudioSelectors": {
                         "Audio Selector 1": {
                             "DefaultSelection": "DEFAULT"
@@ -58,8 +61,9 @@ def handler(event, context):
                             "CodecSettings": {
                                 "Codec": "H_264",
                                 "H264Settings": {
-                                    "Bitrate": 8000000,
-                                    "RateControlMode": "CBR"
+                                    "Bitrate": 4000000,
+                                    "RateControlMode": "VBR",
+                                    "QualityTuningLevel": "SINGLE_PASS_HQ"
                                 }
                             }
                         },

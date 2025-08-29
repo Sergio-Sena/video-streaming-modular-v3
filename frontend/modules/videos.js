@@ -753,6 +753,113 @@ class VideosModule {
         return mimeTypes[ext] || 'video/mp4';
     }
 
+    async handleSingleFileUpload(file, progressCallback) {
+        console.log(`📤 Upload individual: ${file.name}`);
+        
+        try {
+            // Extrai caminho da pasta se for upload de pasta
+            let folderPath = '';
+            if (file.webkitRelativePath) {
+                const pathParts = file.webkitRelativePath.split('/');
+                if (pathParts.length > 1) {
+                    pathParts.pop(); // Remove nome do arquivo
+                    folderPath = pathParts.join('/').replace(/[^a-zA-Z0-9\/\-_]/g, '_');
+                }
+            }
+
+            // Redireciona uploads não-MP4 para bucket de conversão
+            const isMP4 = file.name.toLowerCase().endsWith('.mp4');
+            const targetBucket = isMP4 ? 'video-streaming-sstech-eaddf6a1' : 'video-conversion-temp-sstech';
+            const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
+            
+            if (response.success) {
+                if (response.multipart) {
+                    await this.handleMultipartUploadWithProgress(file, response.uploadId, response.key, folderPath, progressCallback);
+                } else if (response.uploadUrl) {
+                    const startTime = Date.now();
+                    
+                    await window.apiModule.uploadToS3(response.uploadUrl, file, (progress, loaded, total) => {
+                        // Calcula velocidade
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        const speed = loaded / elapsed;
+                        
+                        if (progressCallback) {
+                            progressCallback(progress, speed);
+                        }
+                    });
+                } else {
+                    throw new Error('Não foi possível obter URL de upload');
+                }
+            } else {
+                throw new Error(response.message || 'Falha na geração de URL');
+            }
+        } catch (error) {
+            console.error(`❌ Erro no upload de ${file.name}:`, error);
+            throw error;
+        }
+    }
+    
+    async handleMultipartUploadWithProgress(file, uploadId, key, folderPath, progressCallback) {
+        const chunkSize = 20 * 1024 * 1024; // 20MB
+        const concurrency = 4;
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        const parts = [];
+        const startTime = Date.now();
+        let uploadedBytes = 0;
+        let completedChunks = 0;
+
+        // Função para upload de um chunk
+        const uploadChunk = async (chunkIndex) => {
+            const start = chunkIndex * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+            const partNumber = chunkIndex + 1;
+
+            // Obter URL para esta parte
+            const partResponse = await window.apiModule.getPartUrl(uploadId, partNumber, key);
+            if (!partResponse.success) {
+                throw new Error(`Erro ao obter URL da parte ${partNumber}`);
+            }
+
+            // Upload da parte
+            const etag = await window.apiModule.uploadChunk(partResponse.uploadUrl, chunk);
+            
+            // Atualizar progresso
+            uploadedBytes += chunk.size;
+            completedChunks++;
+            const progress = (uploadedBytes / file.size) * 100;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const speed = uploadedBytes / elapsed;
+            
+            if (progressCallback) {
+                progressCallback(progress, speed);
+            }
+
+            return { PartNumber: partNumber, ETag: etag };
+        };
+
+        // Upload em lotes paralelos
+        for (let i = 0; i < totalChunks; i += concurrency) {
+            const batch = [];
+            for (let j = 0; j < concurrency && (i + j) < totalChunks; j++) {
+                batch.push(uploadChunk(i + j));
+            }
+            
+            const batchResults = await Promise.all(batch);
+            parts.push(...batchResults);
+        }
+
+        // Ordenar parts por PartNumber
+        parts.sort((a, b) => a.PartNumber - b.PartNumber);
+
+        // Completar multipart upload
+        const completeResponse = await window.apiModule.completeMultipart(uploadId, parts, key);
+        
+        if (!completeResponse.success) {
+            throw new Error('Erro ao finalizar upload');
+        }
+    }
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;

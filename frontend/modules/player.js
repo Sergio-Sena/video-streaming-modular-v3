@@ -105,11 +105,50 @@ class PlayerModule {
                         },
                         nativeVideoTracks: false,
                         nativeAudioTracks: false
+                    },
+                    userActions: {
+                        hotkeys: true
                     }
                 });
                 
+
+                
                 this.player.ready(() => {
                     console.log('Video.js player ready');
+                    
+                    // Forçar controles sempre visíveis
+                    this.player.controls(true);
+                    this.player.el().setAttribute('controls', 'controls');
+                    
+                    // Remover botão play após iniciar
+                    this.player.on('play', () => {
+                        const bigPlayButton = this.player.el().querySelector('.vjs-big-play-button');
+                        if (bigPlayButton) {
+                            bigPlayButton.style.display = 'none';
+                        }
+                    });
+                    
+                    // Forçar exibição da barra de controles continuamente
+                    this.forceControlsInterval = setInterval(() => {
+                        const controlBar = this.player.el().querySelector('.vjs-control-bar');
+                        if (controlBar) {
+                            controlBar.style.display = 'flex';
+                            controlBar.style.opacity = '1';
+                            controlBar.style.visibility = 'visible';
+                            controlBar.style.transform = 'translateY(0)';
+                            controlBar.style.position = 'absolute';
+                            controlBar.style.bottom = '0';
+                            controlBar.style.left = '0';
+                            controlBar.style.right = '0';
+                            controlBar.style.zIndex = '1000';
+                        }
+                        
+                        // Remover classe que esconde controles
+                        if (this.player.el()) {
+                            this.player.el().classList.remove('vjs-user-inactive');
+                        }
+                    }, 500);
+                    
                     this.setupVideoSource(videoUrl, videoName);
                 });
                 
@@ -119,7 +158,7 @@ class PlayerModule {
                 });
             } else {
                 console.log('Video.js não carregado, usando HTML5 padrão');
-                this.setupHTMLVideo(videoUrl, videoName);
+                this.setupHTMLVideoWithControls(videoUrl, videoName);
             }
         }, 500);
         
@@ -130,6 +169,12 @@ class PlayerModule {
     close() {
         this.modal.style.display = 'none';
         document.body.style.overflow = 'auto';
+        
+        // Limpar interval de controles
+        if (this.forceControlsInterval) {
+            clearInterval(this.forceControlsInterval);
+            this.forceControlsInterval = null;
+        }
         
         // Limpa HLS.js se estiver ativo
         if (this.hls) {
@@ -274,24 +319,48 @@ class PlayerModule {
     
     setupHTMLVideo(videoUrl, videoName) {
         console.log('🎬 Configurando HTML5 video:', videoUrl);
+        this.setupHTMLVideoWithControls(videoUrl, videoName);
+    }
+    
+    setupHTMLVideoWithControls(videoUrl, videoName) {
+        console.log('🎬 Configurando HTML5 video com controles:', videoUrl);
         
-        // Remove Video.js e cria elemento HTML5 simples
+        // Remove Video.js e cria elemento HTML5 com controles completos
         const container = document.querySelector('.video-container');
         if (container) {
             container.innerHTML = `
-                <video id="videoPlayerHTML5" 
-                       controls 
-                       preload="auto" 
-                       width="100%" 
-                       height="100%"
-                       crossorigin="anonymous">
-                    <source src="${videoUrl}" type="video/mp4">
-                    <p>Seu navegador não suporta o elemento video.</p>
-                </video>
+                <div class="html5-player-wrapper">
+                    <video id="videoPlayerHTML5" 
+                           controls 
+                           controlsList="nodownload"
+                           preload="auto" 
+                           width="100%" 
+                           height="100%"
+                           style="background: #000; outline: none;"
+                           crossorigin="anonymous">
+                        <source src="${videoUrl}" type="video/mp4">
+                        <p>Seu navegador não suporta o elemento video.</p>
+                    </video>
+                    <div class="custom-controls">
+                        <button onclick="window.playerModule.toggleFullscreen()" class="fullscreen-btn">
+                            🔲 Tela Cheia
+                        </button>
+                        <button onclick="window.playerModule.changeSpeed(0.5)" class="speed-btn">0.5x</button>
+                        <button onclick="window.playerModule.changeSpeed(1)" class="speed-btn">1x</button>
+                        <button onclick="window.playerModule.changeSpeed(1.5)" class="speed-btn">1.5x</button>
+                        <button onclick="window.playerModule.changeSpeed(2)" class="speed-btn">2x</button>
+                    </div>
+                </div>
             `;
             
             const video = document.getElementById('videoPlayerHTML5');
+            this.video = video;
+            
             if (video) {
+                // Forçar controles nativos
+                video.controls = true;
+                video.setAttribute('controls', 'controls');
+                
                 video.addEventListener('loadstart', () => console.log('✅ HTML5: Carregamento iniciado'));
                 video.addEventListener('canplay', () => console.log('✅ HTML5: Pode reproduzir'));
                 video.addEventListener('error', (e) => {
@@ -307,6 +376,15 @@ class PlayerModule {
                 
                 video.load();
             }
+        }
+    }
+    
+    changeSpeed(rate) {
+        if (this.video) {
+            this.video.playbackRate = rate;
+            console.log(`Velocidade alterada para: ${rate}x`);
+        } else if (this.player && this.player.playbackRate) {
+            this.player.playbackRate(rate);
         }
     }
     

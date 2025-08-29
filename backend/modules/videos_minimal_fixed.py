@@ -33,6 +33,14 @@ def handler(event, context):
             else:
                 return get_simple_view(headers)
         
+        # POST request - upload e outras ações
+        elif event['httpMethod'] == 'POST':
+            return handle_post_request(event, headers)
+        
+        # DELETE request - deletar vídeos
+        elif event['httpMethod'] == 'DELETE':
+            return handle_delete_request(event, headers)
+        
         # Outros métodos
         return {
             'statusCode': 405,

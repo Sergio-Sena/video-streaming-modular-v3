@@ -61,10 +61,24 @@ class UploadManager {
                 </div>
                 
                 <div class="upload-footer">
-                    <div class="upload-stats">
+                    <div class="upload-progress-global" id="uploadProgressGlobal" style="display: none;">
+                        <div class="progress-header">
+                            <span class="progress-text">Fazendo upload...</span>
+                            <span class="progress-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-global">
+                            <div class="progress-fill-global" id="progressFillGlobal"></div>
+                        </div>
+                        <div class="progress-details">
+                            <span id="currentFile">Preparando...</span>
+                            <span id="uploadSpeed"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-stats" id="uploadStats">
                         <span id="totalSize">0 MB</span> • <span id="totalFiles">0 arquivos</span>
                     </div>
-                    <div class="upload-buttons">
+                    <div class="upload-buttons" id="uploadButtons">
                         <button class="action-btn btn-secondary" id="cancelUpload">Cancelar</button>
                         <button class="action-btn btn-primary" id="startUpload" disabled>
                             ⬆️ Fazer Upload
@@ -140,9 +154,13 @@ class UploadManager {
     }
 
     hide() {
+        console.log('😪 Fechando modal...');
         document.getElementById('uploadModal').classList.remove('active');
         document.body.style.overflow = '';
-        this.clearSelection();
+        // Não limpar seleção durante upload
+        if (!this.isUploading) {
+            this.clearSelection();
+        }
     }
 
     handleFileSelection(files, type) {
@@ -224,7 +242,7 @@ class UploadManager {
         }
         
         // Pastas
-        Object.keys(current.folders).forEach(folderName => {
+        Object.keys(current.folders || {}).forEach(folderName => {
             const folderPath = [...this.currentPath, folderName].join('/');
             html += `
                 <div class="file-item" ondblclick="uploadManager.navigateToFolder('${folderName}')">
@@ -418,7 +436,7 @@ class UploadManager {
     clearSelection() {
         this.selectedFiles.clear();
         this.allFiles = [];
-        this.fileTree = {};
+        this.fileTree = { folders: {}, files: [] };
         this.currentPath = [];
         this.updateSelection();
         this.renderFileTree();
@@ -427,16 +445,147 @@ class UploadManager {
 
     async startUpload() {
         const selectedFiles = this.getSelectedFileObjects();
-        if (selectedFiles.length === 0) return;
+        console.log('📋 Arquivos selecionados:', selectedFiles);
+        
+        if (selectedFiles.length === 0) {
+            console.log('❌ Nenhum arquivo selecionado');
+            return;
+        }
         
         console.log(`🚀 Iniciando upload de ${selectedFiles.length} arquivos`);
         
-        this.hide();
+        this.showProgress();
+        console.log('📊 Barra de progresso mostrada');
         
-        // Usar o sistema de upload existente
-        if (window.videosModule && window.videosModule.handleFileUpload) {
-            await window.videosModule.handleFileUpload(selectedFiles);
+        try {
+            await this.uploadFiles(selectedFiles);
+            console.log('✅ Upload concluído com sucesso');
+            this.showSuccess();
+        } catch (error) {
+            console.log('❌ Erro no upload:', error);
+            this.showError(error.message);
         }
+    }
+    
+    showProgress() {
+        console.log('🔄 Mostrando barra de progresso...');
+        this.isUploading = true;
+        
+        const stats = document.getElementById('uploadStats');
+        const buttons = document.getElementById('uploadButtons');
+        const progress = document.getElementById('uploadProgressGlobal');
+        
+        console.log('📊 Elementos encontrados:', { stats: !!stats, buttons: !!buttons, progress: !!progress });
+        
+        if (stats) stats.style.display = 'none';
+        if (buttons) buttons.style.display = 'none';
+        if (progress) progress.style.display = 'block';
+        
+        console.log('✅ Barra de progresso configurada');
+    }
+    
+    updateProgress(current, total, fileName, percent, speed) {
+        document.getElementById('progressFillGlobal').style.width = `${percent}%`;
+        document.querySelector('.progress-percent').textContent = `${Math.round(percent)}%`;
+        document.getElementById('currentFile').textContent = `${current}/${total}: ${fileName}`;
+        if (speed) {
+            document.getElementById('uploadSpeed').textContent = this.formatSpeed(speed);
+        }
+    }
+    
+    async uploadFiles(files) {
+        const total = files.length;
+        let completed = 0;
+        
+        console.log(`📤 Processando ${total} arquivos...`);
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileName = file.name;
+            
+            console.log(`📁 Processando arquivo ${i + 1}/${total}: ${fileName}`);
+            this.updateProgress(i + 1, total, fileName, (completed / total) * 100);
+            
+            // Upload real usando sistema existente
+            if (window.videosModule && window.videosModule.handleSingleFileUpload) {
+                await window.videosModule.handleSingleFileUpload(file, (progress) => {
+                    const overallProgress = ((completed + progress / 100) / total) * 100;
+                    this.updateProgress(i + 1, total, fileName, overallProgress);
+                });
+            } else {
+                console.log('⚠️ Sistema de upload não encontrado, usando fallback');
+                await this.fallbackUpload(file);
+            }
+            
+            completed++;
+            console.log(`✅ Arquivo ${fileName} processado`);
+        }
+        
+        console.log('🎉 Todos os arquivos processados');
+    }
+    
+    async fallbackUpload(file) {
+        // Fallback: usar sistema de upload direto
+        console.log('🔄 Usando fallback upload para:', file.name);
+        
+        try {
+            // Usar handleFileUpload do videosModule
+            if (window.videosModule && window.videosModule.handleFileUpload) {
+                await window.videosModule.handleFileUpload([file]);
+            } else {
+                console.log('❌ Nenhum sistema de upload disponível');
+                throw new Error('Sistema de upload não disponível');
+            }
+        } catch (error) {
+            console.log('❌ Erro no fallback upload:', error);
+            throw error;
+        }
+    }
+    
+    showSuccess() {
+        console.log('🎉 Mostrando sucesso...');
+        this.isUploading = false;
+        
+        const progressText = document.querySelector('.progress-text');
+        const currentFile = document.getElementById('currentFile');
+        const uploadSpeed = document.getElementById('uploadSpeed');
+        
+        if (progressText) progressText.textContent = 'Upload concluído!';
+        if (currentFile) currentFile.textContent = 'Todos os arquivos foram enviados';
+        if (uploadSpeed) uploadSpeed.textContent = '';
+        
+        setTimeout(() => {
+            console.log('🔄 Fechando modal após sucesso...');
+            this.resetProgress();
+            this.hide();
+            if (window.videosModule && window.videosModule.loadVideos) {
+                window.videosModule.loadVideos();
+            }
+        }, 3000);
+    }
+    
+    showError(message) {
+        document.querySelector('.progress-text').textContent = 'Erro no upload';
+        document.getElementById('currentFile').textContent = message;
+        document.getElementById('uploadSpeed').textContent = '';
+        
+        setTimeout(() => {
+            this.resetProgress();
+        }, 3000);
+    }
+    
+    resetProgress() {
+        document.getElementById('uploadProgressGlobal').style.display = 'none';
+        document.getElementById('uploadStats').style.display = 'flex';
+        document.getElementById('uploadButtons').style.display = 'flex';
+        document.getElementById('progressFillGlobal').style.width = '0%';
+        document.querySelector('.progress-percent').textContent = '0%';
+    }
+    
+    formatSpeed(bytesPerSecond) {
+        if (bytesPerSecond < 1024) return `${bytesPerSecond} B/s`;
+        if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+        return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
     }
 
     countFilesInFolder(folder) {

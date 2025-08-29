@@ -78,9 +78,18 @@ class APICognitoModule {
 
     async getUploadUrl(fileName, fileType, fileSize, folderPath = '') {
         console.log('📤 Solicitando URL de upload...', { fileName, fileSize });
-        return await this.request('/videos', {
-            method: 'POST',
-            body: JSON.stringify({ fileName, fileType, fileSize, folderPath })
+        
+        // Usar GET temporariamente até POST ser configurado
+        const params = new URLSearchParams({
+            action: 'get-upload-url',
+            filename: fileName,
+            contentType: fileType,
+            fileSize: fileSize.toString(),
+            folderPath: folderPath || ''
+        });
+        
+        return await this.request(`/videos?${params}`, {
+            method: 'GET'
         });
     }
 
@@ -137,17 +146,23 @@ class APICognitoModule {
 
     // Multipart upload
     async getPartUrl(uploadId, partNumber, key) {
-        return await this.request('/videos', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'get-part-url', uploadId, partNumber, key })
+        const params = new URLSearchParams({
+            action: 'get-part-url',
+            uploadId,
+            partNumber: partNumber.toString(),
+            key
         });
+        return await this.request(`/videos?${params}`, { method: 'GET' });
     }
 
     async completeMultipart(uploadId, parts, key) {
-        return await this.request('/videos', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'complete-multipart', uploadId, parts, key })
+        const params = new URLSearchParams({
+            action: 'complete-multipart',
+            uploadId,
+            key,
+            parts: JSON.stringify(parts)
         });
+        return await this.request(`/videos?${params}`, { method: 'GET' });
     }
 
     async uploadChunk(url, chunk) {

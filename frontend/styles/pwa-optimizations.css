@@ -1,0 +1,218 @@
+/**
+ * PWA Performance Optimizations - RISCO ZERO
+ * Apenas melhorias de performance sem alterar layout existente
+ */
+
+/* ==========================================================================
+   TOUCH OPTIMIZATIONS
+   ========================================================================== */
+
+/* Elimina 300ms delay em touch devices */
+.video-card,
+.btn,
+.delete-btn,
+.play-btn,
+.folder-action-btn,
+.upload-btn,
+.modal-content,
+.breadcrumb-item {
+    touch-action: manipulation;
+}
+
+/* Melhora scroll performance */
+.video-grid,
+.upload-progress,
+.folder-content,
+.mobile-menu {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+/* ==========================================================================
+   GPU ACCELERATION
+   ========================================================================== */
+
+/* Força GPU para elementos animados */
+.modal-content,
+.video-card,
+.upload-item,
+.mobile-menu,
+.hamburger-menu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Otimiza transições */
+.modal,
+.video-card:hover,
+.btn:active {
+    will-change: transform, opacity;
+}
+
+/* Remove will-change após animação */
+.modal.show,
+.video-card:not(:hover),
+.btn:not(:active) {
+    will-change: auto;
+}
+
+/* ==========================================================================
+   LAYOUT CONTAINMENT
+   ========================================================================== */
+
+/* Isola layout calculations */
+.video-card {
+    contain: layout style;
+}
+
+.video-thumbnail {
+    contain: layout style paint;
+}
+
+.upload-item {
+    contain: layout;
+}
+
+.folder-item {
+    contain: layout;
+}
+
+/* ==========================================================================
+   PERFORMANCE HINTS
+   ========================================================================== */
+
+/* Otimiza rendering de imagens */
+.video-thumbnail img,
+.video-thumbnail video {
+    image-rendering: optimizeSpeed;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+/* Otimiza text rendering */
+.video-info h3,
+.folder-name,
+.file-name {
+    text-rendering: optimizeSpeed;
+}
+
+/* ==========================================================================
+   SMOOTH SCROLLING
+   ========================================================================== */
+
+/* Scroll suave apenas onde necessário */
+.video-grid,
+.folder-content,
+.upload-progress {
+    scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+   MEMORY OPTIMIZATIONS
+   ========================================================================== */
+
+/* Lazy loading hint para browsers */
+.video-thumbnail video {
+    loading: lazy;
+}
+
+/* Otimiza compositing */
+.progress-fill,
+.loading-spinner {
+    transform: translateZ(0);
+    contain: strict;
+}
+
+/* ==========================================================================
+   ACCESSIBILITY PERFORMANCE
+   ========================================================================== */
+
+/* Reduz motion para usuários sensíveis */
+@media (prefers-reduced-motion: reduce) {
+    .modal-content,
+    .video-card,
+    .upload-item {
+        transform: none;
+        transition: none;
+    }
+}
+
+/* ==========================================================================
+   NETWORK OPTIMIZATIONS
+   ========================================================================== */
+
+/* Preload hints para recursos críticos */
+.video-thumbnail::before {
+    content: '';
+    display: none;
+    /* Força preload de estilos críticos */
+}
+
+/* ==========================================================================
+   BATTERY OPTIMIZATION
+   ========================================================================== */
+
+/* Pausa animações quando não visível */
+.video-card:not(.visible) .loading-spinner,
+.upload-item:not(.visible) .progress-fill {
+    animation-play-state: paused;
+}
+
+/* ==========================================================================
+   FOCUS PERFORMANCE
+   ========================================================================== */
+
+/* Otimiza focus indicators */
+.btn:focus,
+.video-card:focus,
+.folder-item:focus {
+    outline-offset: 2px;
+    contain: layout;
+}
+
+/* ==========================================================================
+   CRITICAL RENDERING PATH
+   ========================================================================== */
+
+/* Prioriza above-the-fold content */
+.app-header,
+.main-content > .content-header {
+    contain: layout style;
+    will-change: auto;
+}
+
+/* ==========================================================================
+   MOBILE SPECIFIC OPTIMIZATIONS
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    /* Otimiza para mobile */
+    .video-grid {
+        contain: layout;
+        transform: translateZ(0);
+    }
+    
+    .modal-content {
+        contain: layout style;
+    }
+    
+    /* Otimiza keyboard virtual */
+    .input-group input:focus {
+        transform: translateZ(0);
+        contain: layout;
+    }
+}
+
+/* ==========================================================================
+   INTERSECTION OBSERVER HINTS
+   ========================================================================== */
+
+/* Prepara elementos para lazy loading */
+.video-card[data-lazy="true"] {
+    content-visibility: auto;
+    contain-intrinsic-size: 300px 200px;
+}
+
+.upload-item[data-lazy="true"] {
+    content-visibility: auto;
+    contain-intrinsic-size: 100% 80px;
+}

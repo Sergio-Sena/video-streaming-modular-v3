@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Player com Controles Fixos</title>
+    
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.5.2/video-js.css" rel="stylesheet">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="frontend/styles/main.css">
+    <link rel="stylesheet" href="frontend/styles/hybrid-player.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .test-header h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .player-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .option-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .option-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .option-card p {
+            color: #a0a0a0;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .pros, .cons {
+            font-size: 0.9rem;
+        }
+        
+        .pros {
+            color: #4caf50;
+        }
+        
+        .cons {
+            color: #ff6b6b;
+        }
+        
+        .current-issue {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .current-issue h3 {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+        }
+        
+        .issue-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .issue-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .issue-list li:before {
+            content: '❌';
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🎬 Teste - Correção de Controles do Player</h1>
+            <p>Teste as diferentes soluções para o problema dos controles que somem</p>
+        </div>
+        
+        <div class="current-issue">
+            <h3>🚨 Problema Atual Identificado</h3>
+            <ul class="issue-list">
+                <li>Controles do Video.js desaparecem após alguns segundos</li>
+                <li>Interval de 300ms não é suficiente em alguns navegadores</li>
+                <li>Classes .vjs-user-inactive removem controles automaticamente</li>
+                <li>Bug conhecido quando DevTools (F12) está aberto</li>
+                <li>CSS !important não sobrescreve comportamento JavaScript</li>
+            </ul>
+        </div>
+        
+        <div class="player-options">
+            <!-- Opção 1: Video.js Corrigido -->
+            <div class="option-card">
+                <h3>🔧 Video.js Corrigido</h3>
+                <p>Versão melhorada do player atual com 5 métodos diferentes para manter controles sempre visíveis.</p>
+                
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>✅ Prós:</strong><br>
+                        • Mantém funcionalidades atuais<br>
+                        • Controles profissionais<br>
+                        • Suporte HLS/TS<br>
+                        • Velocidade variável
+                    </div>
+                    <div class="cons">
+                        <strong>❌ Contras:</strong><br>
+                        • Pode ainda ter bugs<br>
+                        • Dependente de JavaScript<br>
+                        • Complexidade alta
+                    </div>
+                </div>
+                
+                <button class="test-btn" onclick="testPlayer('fixed')">
+                    Testar Video.js Corrigido
+                </button>
+            </div>
+            
+            <!-- Opção 2: VLC Player -->
+            <div class="option-card">
+                <h3>🎥 VLC Web Player</h3>
+                <p>Player baseado em VLC com controles nativos sempre visíveis e suporte total a formatos.</p>
+                
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>✅ Prós:</strong><br>
+                        • Controles SEMPRE visíveis<br>
+                        • Suporte a TODOS os formatos<br>
+                        • Performance superior<br>
+                        • Controles nativos
+                    </div>
+                    <div class="cons">
+                        <strong>❌ Contras:</strong><br>
+                        • Requer plugin instalado<br>
+                        • Nem todos os usuários têm<br>
+                        • Interface menos moderna
+                    </div>
+                </div>
+                
+                <button class="test-btn" onclick="testPlayer('vlc')">
+                    Testar VLC Player
+                </button>
+            </div>
+            
+            <!-- Opção 3: Player Híbrido -->
+            <div class="option-card">
+                <h3>🔀 Player Híbrido (Recomendado)</h3>
+                <p>Solução completa que permite escolher entre Video.js corrigido, HTML5 nativo e VLC conforme necessário.</p>
+                
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>✅ Prós:</strong><br>
+                        • Melhor dos 3 mundos<br>
+                        • Usuário escolhe o player<br>
+                        • Fallback automático<br>
+                        • Máxima compatibilidade
+                    </div>
+                    <div class="cons">
+                        <strong>❌ Contras:</strong><br>
+                        • Interface mais complexa<br>
+                        • Arquivo maior<br>
+                        • Mais opções para usuário
+                    </div>
+                </div>
+                
+                <button class="test-btn" onclick="testPlayer('hybrid')">
+                    Testar Player Híbrido
+                </button>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <p><strong>💡 Recomendação:</strong> Teste o Player Híbrido primeiro, pois oferece todas as opções em uma interface única.</p>
+        </div>
+    </div>
+    
+    <!-- Video.js JavaScript -->
+    <script src="https://vjs.zencdn.net/8.5.2/video.min.js"></script>
+    
+    <!-- HLS.js para suporte .ts -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <!-- Players -->
+    <script src="frontend/modules/player-fixed.js"></script>
+    <script src="frontend/modules/vlc-player.js"></script>
+    <script src="frontend/modules/hybrid-player.js"></script>
+    
+    <script>
+        // URL de teste (substitua pela sua)
+        const TEST_VIDEO_URL = 'https://d2we88koy23cl4.cloudfront.net/test-video.mp4';
+        const TEST_VIDEO_NAME = 'Teste - Controles Fixos.mp4';
+        
+        // Instâncias dos players
+        let playerFixed = null;
+        let playerVLC = null;
+        let playerHybrid = null;
+        
+        function testPlayer(type) {
+            console.log(`🧪 Testando player: ${type}`);
+            
+            switch (type) {
+                case 'fixed':
+                    if (!playerFixed) {
+                        playerFixed = new PlayerModuleFixed();
+                        window.playerModule = playerFixed;
+                    }
+                    playerFixed.play(TEST_VIDEO_URL, TEST_VIDEO_NAME);
+                    break;
+                    
+                case 'vlc':
+                    if (!playerVLC) {
+                        playerVLC = new VLCPlayerModule();
+                        window.playerModule = playerVLC;
+                    }
+                    playerVLC.play(TEST_VIDEO_URL, TEST_VIDEO_NAME);
+                    break;
+                    
+                case 'hybrid':
+                    if (!playerHybrid) {
+                        playerHybrid = new HybridPlayerModule();
+                        window.playerModule = playerHybrid;
+                    }
+                    playerHybrid.play(TEST_VIDEO_URL, TEST_VIDEO_NAME);
+                    break;
+            }
+        }
+        
+        // Log de debug
+        console.log('🎬 Página de teste carregada');
+        console.log('📹 Video.js disponível:', typeof videojs !== 'undefined');
+        console.log('🎥 HLS.js disponível:', typeof Hls !== 'undefined');
+        
+        // Detectar VLC Plugin
+        const vlcDetected = Array.from(navigator.plugins).some(plugin => 
+            plugin.name.toLowerCase().includes('vlc')
+        );
+        console.log('🔌 VLC Plugin detectado:', vlcDetected);
+    </script>
+</body>
+</html>

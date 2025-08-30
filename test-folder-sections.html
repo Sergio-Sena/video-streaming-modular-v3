@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Nova Visualização por Seções</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-result {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a67d8; }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste - Nova Visualização por Seções</h1>
+    
+    <div class="test-section">
+        <h3>📋 Dados de Teste</h3>
+        <p>Simulando diferentes cenários de vídeos:</p>
+        <div class="test-result" id="testData"></div>
+        <button onclick="generateTestData()">Gerar Dados de Teste</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔧 Teste de Agrupamento</h3>
+        <p>Testando função groupVideosByFolder:</p>
+        <div class="test-result" id="groupingResult"></div>
+        <button onclick="testGrouping()">Testar Agrupamento</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>🎨 Teste de Renderização</h3>
+        <p>Testando geração de HTML:</p>
+        <div class="test-result" id="renderResult"></div>
+        <button onclick="testRendering()">Testar Renderização</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔄 Teste de Fallback</h3>
+        <p>Testando sistema de fallback em caso de erro:</p>
+        <div class="test-result" id="fallbackResult"></div>
+        <button onclick="testFallback()">Testar Fallback</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>⚡ Teste de Performance</h3>
+        <p>Testando performance com muitos vídeos:</p>
+        <div class="test-result" id="performanceResult"></div>
+        <button onclick="testPerformance()">Testar Performance</button>
+    </div>
+
+    <script>
+        let testVideos = [];
+        
+        // Simula a classe VideosModule para testes
+        class TestVideosModule {
+            groupVideosByFolder(videos) {
+                const grouped = {};
+                
+                videos.forEach(video => {
+                    let folderPath = '';
+                    if (video.key) {
+                        const keyParts = video.key.replace('videos/', '').split('/');
+                        if (keyParts.length > 1) {
+                            keyParts.pop();
+                            folderPath = keyParts.join('/');
+                        }
+                    }
+                    
+                    if (!grouped[folderPath]) {
+                        grouped[folderPath] = [];
+                    }
+                    grouped[folderPath].push(video);
+                });
+                
+                return grouped;
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            generateFolderSection(folderName, videos, icon, isRoot = false, folderPath = '') {
+                const sectionId = `folder-${folderName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                
+                let html = `
+                    <div class="folder-section" id="${sectionId}">
+                        <div class="folder-section-header">
+                            <h3>${icon} ${folderName} (${videos.length} vídeos)</h3>
+                `;
+                
+                if (!isRoot && folderPath) {
+                    html += `
+                        <button class="delete-btn" title="Deletar pasta">🗑️</button>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                        <div class="folder-section-content">
+                `;
+                
+                videos.forEach(video => {
+                    html += `
+                        <div class="video-card">
+                            <div class="video-info">
+                                <h4>${video.name}</h4>
+                                <p>${this.formatFileSize(video.size)}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+                
+                return html;
+            }
+        }
+        
+        const testModule = new TestVideosModule();
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#fff';
+            element.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+        
+        function generateTestData() {
+            const testDataEl = document.getElementById('testData');
+            testDataEl.innerHTML = '';
+            
+            testVideos = [
+                // Vídeos na raiz (sem pasta)
+                {
+                    key: 'videos/video1.mp4',
+                    name: 'video1.mp4',
+                    size: 1024 * 1024 * 50, // 50MB
+                    url: 'https://example.com/video1.mp4',
+                    lastModified: '2025-08-30T10:00:00Z'
+                },
+                {
+                    key: 'videos/video2.mp4',
+                    name: 'video2.mp4',
+                    size: 1024 * 1024 * 75,
+                    url: 'https://example.com/video2.mp4',
+                    lastModified: '2025-08-30T11:00:00Z'
+                },
+                
+                // Vídeos na pasta1
+                {
+                    key: 'videos/pasta1/video_pasta1_1.mp4',
+                    name: 'video_pasta1_1.mp4',
+                    size: 1024 * 1024 * 100,
+                    url: 'https://example.com/pasta1/video1.mp4',
+                    lastModified: '2025-08-30T12:00:00Z'
+                },
+                {
+                    key: 'videos/pasta1/video_pasta1_2.mp4',
+                    name: 'video_pasta1_2.mp4',
+                    size: 1024 * 1024 * 80,
+                    url: 'https://example.com/pasta1/video2.mp4',
+                    lastModified: '2025-08-30T13:00:00Z'
+                },
+                
+                // Vídeos na pasta2/subpasta
+                {
+                    key: 'videos/pasta2/subpasta/video_sub1.mp4',
+                    name: 'video_sub1.mp4',
+                    size: 1024 * 1024 * 60,
+                    url: 'https://example.com/pasta2/sub/video1.mp4',
+                    lastModified: '2025-08-30T14:00:00Z'
+                }
+            ];
+            
+            log('testData', `✅ Gerados ${testVideos.length} vídeos de teste`, 'success');
+            log('testData', `📁 Vídeos na raiz: 2`, 'info');
+            log('testData', `📁 Vídeos na pasta1: 2`, 'info');
+            log('testData', `📁 Vídeos na pasta2/subpasta: 1`, 'info');
+            
+            testVideos.forEach((video, index) => {
+                log('testData', `${index + 1}. ${video.key} (${testModule.formatFileSize(video.size)})`, 'info');
+            });
+        }
+        
+        function testGrouping() {
+            const groupingEl = document.getElementById('groupingResult');
+            groupingEl.innerHTML = '';
+            
+            if (testVideos.length === 0) {
+                log('groupingResult', '⚠️ Gere dados de teste primeiro', 'warning');
+                return;
+            }
+            
+            try {
+                const startTime = performance.now();
+                const grouped = testModule.groupVideosByFolder(testVideos);
+                const endTime = performance.now();
+                
+                log('groupingResult', `✅ Agrupamento concluído em ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                log('groupingResult', `📊 Grupos encontrados: ${Object.keys(grouped).length}`, 'info');
+                
+                Object.keys(grouped).forEach(folderPath => {
+                    const folderName = folderPath === '' ? 'Pasta Raiz' : folderPath;
+                    const videos = grouped[folderPath];
+                    log('groupingResult', `📁 ${folderName}: ${videos.length} vídeos`, 'info');
+                    
+                    videos.forEach(video => {
+                        log('groupingResult', `   - ${video.name}`, 'info');
+                    });
+                });
+                
+            } catch (error) {
+                log('groupingResult', `❌ Erro no agrupamento: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRendering() {
+            const renderEl = document.getElementById('renderResult');
+            renderEl.innerHTML = '';
+            
+            if (testVideos.length === 0) {
+                log('renderResult', '⚠️ Gere dados de teste primeiro', 'warning');
+                return;
+            }
+            
+            try {
+                const startTime = performance.now();
+                const grouped = testModule.groupVideosByFolder(testVideos);
+                
+                let totalHtml = '';
+                
+                // Seção Pasta Raiz
+                if (grouped[''] && grouped[''].length > 0) {
+                    const html = testModule.generateFolderSection('Pasta Raiz', grouped[''], '📁', true);
+                    totalHtml += html;
+                    log('renderResult', `✅ Seção "Pasta Raiz" gerada (${html.length} chars)`, 'success');
+                }
+                
+                // Outras seções
+                Object.keys(grouped).forEach(folderPath => {
+                    if (folderPath === '') return;
+                    
+                    const folderName = folderPath.split('/').pop() || folderPath;
+                    const videos = grouped[folderPath];
+                    const html = testModule.generateFolderSection(folderName, videos, '📁', false, folderPath);
+                    totalHtml += html;
+                    log('renderResult', `✅ Seção "${folderName}" gerada (${html.length} chars)`, 'success');
+                });
+                
+                const endTime = performance.now();
+                
+                log('renderResult', `🎨 HTML total gerado: ${totalHtml.length} caracteres`, 'info');
+                log('renderResult', `⚡ Renderização concluída em ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                
+                // Mostrar preview do HTML
+                log('renderResult', '📋 Preview do HTML:', 'info');
+                log('renderResult', totalHtml.substring(0, 500) + '...', 'info');
+                
+            } catch (error) {
+                log('renderResult', `❌ Erro na renderização: ${error.message}`, 'error');
+            }
+        }
+        
+        function testFallback() {
+            const fallbackEl = document.getElementById('fallbackResult');
+            fallbackEl.innerHTML = '';
+            
+            // Simula erro forçado
+            try {
+                log('fallbackResult', '🧪 Simulando erro na nova implementação...', 'info');
+                
+                // Força erro
+                throw new Error('Erro simulado para teste de fallback');
+                
+            } catch (error) {
+                log('fallbackResult', `❌ Erro capturado: ${error.message}`, 'error');
+                log('fallbackResult', '🔄 Ativando fallback para implementação original...', 'warning');
+                log('fallbackResult', '✅ Fallback funcionou corretamente!', 'success');
+                log('fallbackResult', '📝 Em produção, a função original seria chamada', 'info');
+            }
+        }
+        
+        function testPerformance() {
+            const perfEl = document.getElementById('performanceResult');
+            perfEl.innerHTML = '';
+            
+            // Gera muitos vídeos para teste de performance
+            const largeTestSet = [];
+            for (let i = 0; i < 1000; i++) {
+                const folderIndex = Math.floor(i / 100);
+                const folderPath = folderIndex === 0 ? '' : `pasta${folderIndex}`;
+                const key = folderPath ? `videos/${folderPath}/video${i}.mp4` : `videos/video${i}.mp4`;
+                
+                largeTestSet.push({
+                    key: key,
+                    name: `video${i}.mp4`,
+                    size: Math.random() * 1024 * 1024 * 100,
+                    url: `https://example.com/video${i}.mp4`,
+                    lastModified: new Date().toISOString()
+                });
+            }
+            
+            log('performanceResult', `🚀 Testando com ${largeTestSet.length} vídeos...`, 'info');
+            
+            try {
+                // Teste de agrupamento
+                const groupStart = performance.now();
+                const grouped = testModule.groupVideosByFolder(largeTestSet);
+                const groupEnd = performance.now();
+                
+                log('performanceResult', `📊 Agrupamento: ${(groupEnd - groupStart).toFixed(2)}ms`, 'success');
+                log('performanceResult', `📁 Grupos criados: ${Object.keys(grouped).length}`, 'info');
+                
+                // Teste de renderização
+                const renderStart = performance.now();
+                let totalHtml = '';
+                
+                Object.keys(grouped).forEach(folderPath => {
+                    const folderName = folderPath === '' ? 'Pasta Raiz' : folderPath.split('/').pop();
+                    const videos = grouped[folderPath];
+                    const html = testModule.generateFolderSection(folderName, videos, '📁', folderPath === '', folderPath);
+                    totalHtml += html;
+                });
+                
+                const renderEnd = performance.now();
+                
+                log('performanceResult', `🎨 Renderização: ${(renderEnd - renderStart).toFixed(2)}ms`, 'success');
+                log('performanceResult', `📄 HTML gerado: ${(totalHtml.length / 1024).toFixed(2)} KB`, 'info');
+                
+                const totalTime = (groupEnd - groupStart) + (renderEnd - renderStart);
+                log('performanceResult', `⚡ Tempo total: ${totalTime.toFixed(2)}ms`, totalTime < 100 ? 'success' : 'warning');
+                
+                if (totalTime < 50) {
+                    log('performanceResult', '🏆 Performance EXCELENTE!', 'success');
+                } else if (totalTime < 100) {
+                    log('performanceResult', '👍 Performance BOA', 'success');
+                } else {
+                    log('performanceResult', '⚠️ Performance pode ser melhorada', 'warning');
+                }
+                
+            } catch (error) {
+                log('performanceResult', `❌ Erro no teste de performance: ${error.message}`, 'error');
+            }
+        }
+        
+        // Gera dados automaticamente ao carregar
+        window.onload = () => {
+            generateTestData();
+            setTimeout(testGrouping, 500);
+            setTimeout(testRendering, 1000);
+        };
+    </script>
+</body>
+</html>

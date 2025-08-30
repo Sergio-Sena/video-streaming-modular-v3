@@ -164,7 +164,8 @@ class VideosModule {
         }).join('');
     }
     
-    displayFolderNavigation(response) {
+    // BACKUP: Função original (para rollback se necessário)
+    displayFolderNavigationOriginal(response) {
         const videoGrid = document.getElementById('videoGrid');
         const { folders = [], files = [], currentPath = '' } = response;
         
@@ -260,6 +261,152 @@ class VideosModule {
         
         videoGrid.innerHTML = html;
     }
+
+    // NOVA IMPLEMENTAÇÃO: Visualização por seções de pasta
+    displayFolderNavigation(response) {
+        // Flag para testar nova implementação (pode ser alterada para rollback)
+        const USE_NEW_FOLDER_VIEW = true;
+        
+        if (!USE_NEW_FOLDER_VIEW) {
+            console.log('🔄 Usando visualização original');
+            return this.displayFolderNavigationOriginal(response);
+        }
+        
+        try {
+            console.log('🆕 Usando nova visualização por seções');
+            this.displayFolderNavigationNew(response);
+        } catch (error) {
+            console.error('❌ Erro na nova visualização, usando original:', error);
+            this.displayFolderNavigationOriginal(response);
+        }
+    }
+
+    displayFolderNavigationNew(response) {
+        const videoGrid = document.getElementById('videoGrid');
+        
+        console.log('🔍 Dados recebidos:', response);
+        
+        // Se não há dados, usar método original
+        if (!response || (!response.folders && !response.files && !response.items)) {
+            console.log('⚠️ Dados insuficientes, usando visualização original');
+            return this.displayFolderNavigationOriginal(response);
+        }
+        
+        let html = '<div class="folder-sections-view">';
+        
+        // Processar arquivos na raiz (se houver)
+        if (response.files && response.files.length > 0) {
+            html += this.generateFolderSection('Pasta Raiz', response.files, '📄', true);
+        }
+        
+        // Processar pastas
+        if (response.folders && response.folders.length > 0) {
+            response.folders.forEach(folder => {
+                html += this.generateFolderSection(folder.name, [], '📁', false, folder.path, true);
+            });
+        }
+        
+        // Se não há conteúdo, mostrar mensagem
+        if ((!response.files || response.files.length === 0) && (!response.folders || response.folders.length === 0)) {
+            html = '<p>Nenhum item encontrado</p>';
+        } else {
+            html += '</div>';
+        }
+        
+        videoGrid.innerHTML = html;
+    }
+
+    groupVideosByFolder(videos) {
+        const grouped = {};
+        
+        videos.forEach(video => {
+            // Extrair pasta do key ou path
+            let folderPath = '';
+            if (video.key) {
+                const keyParts = video.key.replace('videos/', '').split('/');
+                if (keyParts.length > 1) {
+                    keyParts.pop(); // Remove nome do arquivo
+                    folderPath = keyParts.join('/');
+                }
+            }
+            
+            if (!grouped[folderPath]) {
+                grouped[folderPath] = [];
+            }
+            grouped[folderPath].push(video);
+        });
+        
+        return grouped;
+    }
+
+    generateFolderSection(folderName, videos, icon, isRoot = false, folderPath = '', isFolder = false) {
+        const sectionId = `folder-${folderName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        let html = `
+            <div class="folder-section" id="${sectionId}">
+                <div class="folder-section-header">
+        `;
+        
+        // Se é uma pasta (não arquivos), adicionar duplo clique para navegar
+        if (isFolder) {
+            html += `<h3 ondblclick="window.videosModule.navigateToFolder('${folderPath}')" style="cursor: pointer;">${icon} ${folderName}</h3>`;
+        } else {
+            html += `<h3>${icon} ${folderName} (${videos.length} itens)</h3>`;
+        }
+        
+        html += `
+                    <div class="folder-section-actions">
+        `;
+        
+        // Botão deletar pasta (não para raiz)
+        if (!isRoot && folderPath) {
+            html += `
+                <button class="folder-action-btn delete-btn" onclick="event.stopPropagation(); window.videosModule.deleteFolder('videos/${folderPath}/', '${folderName}')" title="Deletar pasta">
+                    🗑️
+                </button>
+            `;
+        }
+        
+        html += `
+                    </div>
+                </div>
+        `;
+        
+        // Se é pasta, não mostrar conteúdo (será navegado)
+        if (!isFolder) {
+            html += `<div class="folder-section-content">`;
+            
+            // Vídeos da seção
+            videos.forEach(video => {
+                html += `
+                    <div class="video-card folder-video">
+                        <div class="video-thumbnail" onclick="window.playerModule.play('${video.url}', '${video.name}')">
+                            <video preload="metadata">
+                                <source src="${video.url}" type="video/mp4">
+                            </video>
+                            <div class="play-button">▶</div>
+                        </div>
+                        <div class="video-info">
+                            <h3>${video.name}</h3>
+                            <p>${this.formatFileSize(video.size)}</p>
+                            <small>${video.lastModified ? new Date(video.lastModified).toLocaleDateString() : ''}</small>
+                        </div>
+                        <div class="video-actions">
+                            <button class="delete-btn" onclick="window.videosModule.deleteVideo('${video.key}')" title="Deletar vídeo">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        
+        return html;
+    }
     
     async navigateToFolder(path) {
         this.currentFolderPath = path;
@@ -327,7 +474,9 @@ class VideosModule {
                 // Redireciona uploads não-MP4 para bucket de conversão
                 const isMP4 = file.name.toLowerCase().endsWith('.mp4');
                 const targetBucket = isMP4 ? 'video-streaming-sstech-eaddf6a1' : 'video-conversion-temp-sstech';
-                const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
+                console.log(`📝 Upload: ${file.name}`);
+                
+                const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath);
                 
                 if (response.success) {
                     if (response.multipart) {
@@ -781,7 +930,9 @@ class VideosModule {
             // Redireciona uploads não-MP4 para bucket de conversão
             const isMP4 = file.name.toLowerCase().endsWith('.mp4');
             const targetBucket = isMP4 ? 'video-streaming-sstech-eaddf6a1' : 'video-conversion-temp-sstech';
-            const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
+            console.log(`📝 Upload individual: ${file.name}`);
+            
+            const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath);
             
             if (response.success) {
                 if (response.multipart) {

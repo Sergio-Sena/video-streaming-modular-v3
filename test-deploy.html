@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Deploy - Player Híbrido</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        .test-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .success { border-left-color: #4caf50; }
+        .error { border-left-color: #f44336; }
+        .loading { border-left-color: #ff9800; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a67d8; }
+        .log { 
+            background: #000; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Deploy - Player Híbrido</h1>
+    
+    <div class="test-item loading" id="frontend-test">
+        <h3>📱 Frontend (CloudFront)</h3>
+        <p>Testando se o frontend está acessível...</p>
+        <div id="frontend-result">Aguardando...</div>
+    </div>
+    
+    <div class="test-item loading" id="api-test">
+        <h3>🔌 API Gateway</h3>
+        <p>Testando CORS e endpoints...</p>
+        <div id="api-result">Aguardando...</div>
+    </div>
+    
+    <div class="test-item loading" id="player-test">
+        <h3>🎬 Player Híbrido</h3>
+        <p>Testando se o Player Híbrido foi carregado...</p>
+        <div id="player-result">Aguardando...</div>
+        <button onclick="testPlayer()">Testar Player</button>
+    </div>
+    
+    <div class="test-item loading" id="videojs-test">
+        <h3>📹 Video.js</h3>
+        <p>Testando dependências externas...</p>
+        <div id="videojs-result">Aguardando...</div>
+    </div>
+    
+    <div class="test-item">
+        <h3>📊 Log de Testes</h3>
+        <div class="log" id="test-log"></div>
+        <button onclick="clearLog()">Limpar Log</button>
+        <button onclick="runAllTests()">Executar Todos os Testes</button>
+    </div>
+
+    <script>
+        const API_BASE = 'https://4y3erwjgak.execute-api.us-east-1.amazonaws.com/prod';
+        const FRONTEND_BASE = 'https://videos.sstechnologies-cloud.com';
+        
+        function log(message) {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateTestResult(testId, success, message) {
+            const testDiv = document.getElementById(testId);
+            const resultDiv = document.getElementById(testId.replace('-test', '-result'));
+            
+            testDiv.className = `test-item ${success ? 'success' : 'error'}`;
+            resultDiv.innerHTML = `${success ? '✅' : '❌'} ${message}`;
+            
+            log(`${testId}: ${success ? 'SUCESSO' : 'ERRO'} - ${message}`);
+        }
+        
+        async function testFrontend() {
+            try {
+                log('🧪 Testando frontend...');
+                const response = await fetch(`${FRONTEND_BASE}/modules/player.js`);
+                const content = await response.text();
+                
+                if (response.ok && content.includes('Hybrid Player Module')) {
+                    updateTestResult('frontend-test', true, 'Frontend acessível e Player Híbrido carregado');
+                } else {
+                    updateTestResult('frontend-test', false, 'Player Híbrido não encontrado no frontend');
+                }
+            } catch (error) {
+                updateTestResult('frontend-test', false, `Erro: ${error.message}`);
+            }
+        }
+        
+        async function testAPI() {
+            try {
+                log('🧪 Testando API Gateway...');
+                
+                // Teste CORS
+                const corsResponse = await fetch(`${API_BASE}/videos`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': FRONTEND_BASE,
+                        'Access-Control-Request-Method': 'GET'
+                    }
+                });
+                
+                if (!corsResponse.ok) {
+                    throw new Error(`CORS falhou: ${corsResponse.status}`);
+                }
+                
+                // Teste endpoint
+                const apiResponse = await fetch(`${API_BASE}/videos?action=list`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': FRONTEND_BASE
+                    }
+                });
+                
+                const data = await apiResponse.json();
+                
+                if (apiResponse.ok && data.success !== undefined) {
+                    updateTestResult('api-test', true, `API funcionando - ${data.items?.length || 0} vídeos encontrados`);
+                } else {
+                    updateTestResult('api-test', false, `API retornou erro: ${JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                updateTestResult('api-test', false, `Erro: ${error.message}`);
+            }
+        }
+        
+        async function testPlayerModule() {
+            try {
+                log('🧪 Testando Player Module...');
+                
+                // Carrega o script do player
+                const script = document.createElement('script');
+                script.src = `${FRONTEND_BASE}/modules/player.js`;
+                
+                script.onload = () => {
+                    if (typeof PlayerModule !== 'undefined') {
+                        const player = new PlayerModule();
+                        if (player.switchPlayer && player.initVideoJS && player.initHTML5 && player.initVLC) {
+                            updateTestResult('player-test', true, 'Player Híbrido carregado com todos os métodos');
+                        } else {
+                            updateTestResult('player-test', false, 'Player carregado mas métodos híbridos ausentes');
+                        }
+                    } else {
+                        updateTestResult('player-test', false, 'PlayerModule não definido');
+                    }
+                };
+                
+                script.onerror = () => {
+                    updateTestResult('player-test', false, 'Erro ao carregar script do player');
+                };
+                
+                document.head.appendChild(script);
+            } catch (error) {
+                updateTestResult('player-test', false, `Erro: ${error.message}`);
+            }
+        }
+        
+        async function testVideoJS() {
+            try {
+                log('🧪 Testando Video.js...');
+                
+                // Testa se Video.js está disponível via CDN
+                const script = document.createElement('script');
+                script.src = 'https://vjs.zencdn.net/8.5.2/video.min.js';
+                
+                script.onload = () => {
+                    if (typeof videojs !== 'undefined') {
+                        updateTestResult('videojs-test', true, 'Video.js carregado do CDN');
+                    } else {
+                        updateTestResult('videojs-test', false, 'Video.js não disponível após carregamento');
+                    }
+                };
+                
+                script.onerror = () => {
+                    updateTestResult('videojs-test', false, 'Erro ao carregar Video.js do CDN');
+                };
+                
+                document.head.appendChild(script);
+            } catch (error) {
+                updateTestResult('videojs-test', false, `Erro: ${error.message}`);
+            }
+        }
+        
+        function testPlayer() {
+            if (typeof PlayerModule !== 'undefined') {
+                const player = new PlayerModule();
+                player.play('https://d2we88koy23cl4.cloudfront.net/test-video.mp4', 'Teste Player Híbrido');
+                log('🎬 Player Híbrido testado manualmente');
+            } else {
+                log('❌ PlayerModule não disponível para teste');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+        
+        async function runAllTests() {
+            log('🚀 Iniciando todos os testes...');
+            clearLog();
+            
+            await testFrontend();
+            await testAPI();
+            await testPlayerModule();
+            await testVideoJS();
+            
+            log('✅ Todos os testes concluídos!');
+        }
+        
+        // Executa testes automaticamente ao carregar
+        window.onload = () => {
+            log('🎯 Página de teste carregada');
+            setTimeout(runAllTests, 1000);
+        };
+    </script>
+</body>
+</html>

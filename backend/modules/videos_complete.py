@@ -5,21 +5,42 @@ import unicodedata
 import urllib.parse
 
 def sanitize_filename(filename):
-    """Sanitiza nome do arquivo removendo caracteres problemáticos"""
-    # Normalizar e remover acentos
-    filename = unicodedata.normalize('NFD', filename)
-    filename = ''.join(c for c in filename if unicodedata.category(c) != 'Mn')
+    """Sanitiza nome do arquivo seguindo regras rigorosas"""
+    # Separar nome e extensão
+    name, ext = filename.rsplit('.', 1) if '.' in filename else (filename, '')
     
-    # Manter apenas caracteres seguros
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    # Normalizar e remover acentos: ção → cao, ã → a
+    name = unicodedata.normalize('NFD', name)
+    name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
+    
+    # Converter para minúsculas
+    name = name.lower()
+    
+    # Remover caracteres especiais, pontuações e emojis
+    # Manter apenas letras, números e espaços temporariamente
+    name = re.sub(r'[^a-z0-9\s]', '', name)
+    
+    # Substituir espaços por underscores
+    name = re.sub(r'\s+', '_', name)
     
     # Limpar múltiplos underscores
-    filename = re.sub(r'_+', '_', filename)
+    name = re.sub(r'_+', '_', name)
     
     # Remover underscores no início/fim
-    filename = filename.strip('_')
+    name = name.strip('_')
     
-    return filename
+    # Garantir que não fique vazio
+    if not name:
+        name = 'video'
+    
+    # Limitar tamanho (S3 limite: 1024, deixar margem para pasta)
+    max_name_length = 200
+    if len(name) > max_name_length:
+        # Manter início e fim do nome
+        name = name[:max_name_length//2] + '_' + name[-max_name_length//2:]
+    
+    # Reconstruir com extensão em minúsculas
+    return f"{name}.{ext.lower()}" if ext else name
 
 def handler(event, context):
     """Handler completo com upload"""

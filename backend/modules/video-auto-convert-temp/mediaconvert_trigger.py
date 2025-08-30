@@ -7,20 +7,27 @@ import unicodedata
 
 def sanitize_filename(filename):
     """Sanitiza nome do arquivo removendo caracteres problemáticos"""
-    # Normalizar e remover acentos
-    filename = unicodedata.normalize('NFD', filename)
-    filename = ''.join(c for c in filename if unicodedata.category(c) != 'Mn')
+    # Separar nome e extensão
+    name, ext = os.path.splitext(filename)
     
-    # Manter apenas caracteres seguros
-    filename = re.sub(r'[^a-zA-Z0-9._/-]', '_', filename)
+    # Normalizar e remover acentos: ção → cao, ã → a
+    name = unicodedata.normalize('NFD', name)
+    name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
     
-    # Limpar múltiplos underscores
-    filename = re.sub(r'_+', '_', filename)
+    # Remover caracteres especiais: espaços, emojis, símbolos
+    name = re.sub(r'[^a-zA-Z0-9._-]', '_', name)
+    
+    # Limpar múltiplos underscores: _____ → _
+    name = re.sub(r'_+', '_', name)
     
     # Remover underscores no início/fim
-    filename = filename.strip('_')
+    name = name.strip('_')
     
-    return filename
+    # Garantir que não fique vazio
+    if not name:
+        name = 'video_convertido'
+    
+    return name + ext
 
 def handler(event, context):
     """Trigger MediaConvert quando arquivo é enviado para bucket temp"""
@@ -48,20 +55,37 @@ def handler(event, context):
             
         print(f"Iniciando conversão para: {key}")
             
-        # Gera nome do arquivo de saída
-        input_key = key
-        output_key = key.replace('videos/', 'converted/').rsplit('.', 1)[0] + '.mp4'
+        # Sanitizar nome do arquivo SEMPRE
+        original_key = key
+        sanitized_key = sanitize_filename(key)
         
-        # Fallback inteligente: tenta original, depois sanitizado
-        try:
-            # Primeira tentativa: nome original
-            file_input_url = f"s3://{bucket}/{urllib.parse.quote(input_key, safe='/')}"
-            print(f"Tentando arquivo original: {file_input_url}")
-        except Exception as e:
-            # Fallback: nome sanitizado
-            sanitized_key = sanitize_filename(input_key)
-            file_input_url = f"s3://{bucket}/{urllib.parse.quote(sanitized_key, safe='/')}"
-            print(f"Fallback para nome sanitizado: {file_input_url}")
+        print(f"Arquivo original: {original_key}")
+        print(f"Arquivo sanitizado: {sanitized_key}")
+        
+        # Se nome mudou, renomear arquivo no S3
+        if original_key != sanitized_key:
+            print(f"Renomeando: {original_key} → {sanitized_key}")
+            try:
+                s3 = boto3.client('s3')
+                # Copiar com nome sanitizado
+                s3.copy_object(
+                    Bucket=bucket,
+                    CopySource={'Bucket': bucket, 'Key': original_key},
+                    Key=sanitized_key
+                )
+                # Deletar original
+                s3.delete_object(Bucket=bucket, Key=original_key)
+                print(f"Renomeação concluída: {sanitized_key}")
+            except Exception as e:
+                print(f"Erro na renomeação: {e}")
+                sanitized_key = original_key  # Usar original se falhar
+        
+        # Usar nome sanitizado para conversão
+        input_key = sanitized_key
+        output_key = sanitized_key.replace('videos/', 'converted/').rsplit('.', 1)[0] + '.mp4'
+        file_input_url = f"s3://{bucket}/{input_key}"
+        
+        print(f"Tentando arquivo original: {file_input_url}")
         
         job_settings = {
             "Role": "arn:aws:iam::969430605054:role/MediaConvertRole",
@@ -115,7 +139,8 @@ def handler(event, context):
             },
             "UserMetadata": {
                 "OriginalBucket": bucket,
-                "OriginalKey": input_key
+                "OriginalKey": input_key,
+                "SanitizedKey": sanitized_key
             }
         }
         

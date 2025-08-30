@@ -2,7 +2,7 @@
  * Hybrid Player Module - Solução Definitiva
  * Combina Video.js corrigido + VLC + HTML5 com controles sempre visíveis
  */
-class PlayerModule {
+class HybridPlayerModule {
     constructor() {
         this.modal = null;
         this.currentPlayer = null;
@@ -101,24 +101,10 @@ class PlayerModule {
                     
                     <!-- VLC Player -->
                     <div id="vlcContainer" class="player-container">
-                        <div class="vlc-instructions">
-                            <h4>🎬 VLC Web Player</h4>
-                            <p>Para usar o VLC Player:</p>
-                            <ol>
-                                <li>Instale o <a href="https://www.videolan.org/vlc/" target="_blank">VLC Media Player</a></li>
-                                <li>Ative o plugin web no navegador</li>
-                                <li>Recarregue a página</li>
-                            </ol>
-                            <p><strong>Vantagens do VLC:</strong></p>
-                            <ul>
-                                <li>✅ Controles sempre visíveis</li>
-                                <li>✅ Suporte a todos os formatos</li>
-                                <li>✅ Performance superior</li>
-                            </ul>
-                            <button onclick="window.playerModule.switchPlayer('html5', '${videoUrl}', '${videoName}')" 
-                                    class="fallback-btn">
-                                Usar HTML5 Player
-                            </button>
+                        <div class="vlc-placeholder">
+                            <div class="loading-spinner-large"></div>
+                            <p>Carregando VLC Player...</p>
+                            <small>Requer plugin VLC instalado</small>
                         </div>
                     </div>
                 </div>
@@ -304,6 +290,30 @@ class PlayerModule {
                 return;
             }
         }
+        
+        // Fallback: mostrar instruções
+        container.innerHTML = `
+            <div class="vlc-instructions">
+                <h4>🎬 VLC Web Player</h4>
+                <p>Para usar o VLC Player:</p>
+                <ol>
+                    <li>Instale o <a href="https://www.videolan.org/vlc/" target="_blank">VLC Media Player</a></li>
+                    <li>Ative o plugin web no navegador</li>
+                    <li>Recarregue a página</li>
+                </ol>
+                <p><strong>Vantagens do VLC:</strong></p>
+                <ul>
+                    <li>✅ Controles sempre visíveis</li>
+                    <li>✅ Suporte a todos os formatos</li>
+                    <li>✅ Performance superior</li>
+                    <li>✅ Controles avançados</li>
+                </ul>
+                <button onclick="window.playerModule.switchPlayer('html5', '${videoUrl}', '${videoName}')" 
+                        class="fallback-btn">
+                    Usar HTML5 Player
+                </button>
+            </div>
+        `;
         
         console.log('ℹ️ VLC não disponível, mostrando instruções');
     }

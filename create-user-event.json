@@ -1,9 +1,0 @@
-{
-  "rawPath": "/auth/create-user",
-  "requestContext": {
-    "http": {
-      "method": "POST"
-    }
-  },
-  "body": "{\"username\":\"test@example.com\",\"password\":\"TestPassword123!\"}"
-}

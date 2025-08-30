@@ -1,31 +1,246 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
+# =============================================================================
+# TERRAFORM - Infraestrutura como Código
+# =============================================================================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
+terraform.tfplan
+terraform.tfplan.*
+.terraformrc
+terraform.rc
 
-# AWS
+# =============================================================================
+# AWS - Arquivos de Deploy e Configuração
+# =============================================================================
 *.zip
+*.pem
+*.key
+aws-exports.js
 .aws/
 
-# Node modules (se houver)
-node_modules/
+# =============================================================================
+# PYTHON - Dependências e Cache
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Logs
-*.log
+# PyInstaller
+*.manifest
+*.spec
 
-# OS
-.DS_Store
-Thumbs.db
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-# IDE
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# =============================================================================
+# AMBIENTES VIRTUAIS
+# =============================================================================
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pyvenv.cfg
+
+# =============================================================================
+# IDEs e EDITORES
+# =============================================================================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Temporary files
+# =============================================================================
+# SISTEMA OPERACIONAL
+# =============================================================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# LOGS e DEBUGGING
+# =============================================================================
+*.log
+logs/
+*.out
+*.err
+debug.log
+error.log
+access.log
+
+# =============================================================================
+# DEPENDÊNCIAS PYTHON (manter apenas requirements.txt)
+# =============================================================================
+backend/*/botocore/
+backend/*/boto3/
+backend/*/dateutil/
+backend/*/fastapi/
+backend/*/fastapi-*/
+backend/*/idna/
+backend/*/idna-*/
+backend/*/jmespath/
+backend/*/jmespath-*/
+backend/*/mangum/
+backend/*/mangum-*/
+backend/*/pydantic/
+backend/*/pydantic-*/
+backend/*/pydantic_core/
+backend/*/pydantic_core-*/
+backend/*/python_dateutil*/
+backend/*/s3transfer/
+backend/*/s3transfer-*/
+backend/*/six*/
+backend/*/sniffio/
+backend/*/sniffio-*/
+backend/*/starlette/
+backend/*/starlette-*/
+backend/*/typing_extensions*/
+backend/*/typing_inspection*/
+backend/*/urllib3/
+backend/*/urllib3-*/
+
+# =============================================================================
+# ARQUIVOS DE TESTE e TEMPORÁRIOS
+# =============================================================================
+*-event.json
+*-response.json
+test-*.json
 *.tmp
 *.temp
+*.bak
+*.backup
+*.orig
+*.rej
+
+# =============================================================================
+# NODE.JS (caso seja usado no frontend)
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# =============================================================================
+# CERTIFICADOS e CHAVES
+# =============================================================================
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.csr
+*.key
+*.pem
+*.pub
+
+# =============================================================================
+# DOCKER
+# =============================================================================
+.dockerignore
+Dockerfile.prod
+docker-compose.override.yml
+
+# =============================================================================
+# ARQUIVOS DE CONFIGURAÇÃO SENSÍVEIS
+# =============================================================================
+config.json
+secrets.json
+.secrets
+credentials.json
+auth.json
+
+# =============================================================================
+# ARQUIVOS ESPECÍFICOS DO PROJETO
+# =============================================================================
+# Manter apenas os handlers principais e requirements.txt
+backend/auth-service/simple_handler.py
+
+# Arquivos de output do Lambda
+function.zip
+lambda-deployment-*.zip
+
+# Arquivos de configuração local
+local-config.json
+dev-config.json

@@ -1426,9 +1426,21 @@ body {
     height: 100%;
     min-height: 400px;
     object-fit: contain;
+    background: #000;
 }
 
-/* Video.js controles forçados */
+/* Vídeos verticais - sem zoom, sem corte */
+.modal-content.vertical-video #videoPlayerHTML5,
+.modal-content.vertical-video .video-js video {
+    object-fit: contain !important;
+    object-position: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Video.js controles SEMPRE visíveis */
 .video-js .vjs-control-bar {
     display: flex !important;
     opacity: 1 !important;
@@ -1437,8 +1449,11 @@ body {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    z-index: 1000 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    z-index: 2000 !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+    pointer-events: auto !important;
 }
 
 .video-js .vjs-big-play-button {

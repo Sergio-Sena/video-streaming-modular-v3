@@ -75,7 +75,8 @@ class PlayerModule {
                            width="100%" 
                            height="100%" 
                            data-setup='{"fluid": true, "responsive": true}'
-                           onloadedmetadata="window.playerModule.detectOrientation(this)">
+                           onloadedmetadata="window.playerModule.detectOrientation(this)"
+                           style="object-fit: contain !important; object-position: center !important;">
                         <source src="${videoUrl}" type="video/mp4">
                         <p class="vjs-no-js">
                             Para ver este vídeo, ative o JavaScript e considere atualizar para um
@@ -129,26 +130,38 @@ class PlayerModule {
                         }
                     });
                     
-                    // Forçar exibição da barra de controles continuamente
+                    // Forçar exibição da barra de controles SEMPRE
                     this.forceControlsInterval = setInterval(() => {
-                        const controlBar = this.player.el().querySelector('.vjs-control-bar');
+                        const playerEl = this.player.el();
+                        const controlBar = playerEl?.querySelector('.vjs-control-bar');
+                        
                         if (controlBar) {
-                            controlBar.style.display = 'flex';
-                            controlBar.style.opacity = '1';
-                            controlBar.style.visibility = 'visible';
-                            controlBar.style.transform = 'translateY(0)';
-                            controlBar.style.position = 'absolute';
-                            controlBar.style.bottom = '0';
-                            controlBar.style.left = '0';
-                            controlBar.style.right = '0';
-                            controlBar.style.zIndex = '1000';
+                            controlBar.style.cssText = `
+                                display: flex !important;
+                                opacity: 1 !important;
+                                visibility: visible !important;
+                                transform: translateY(0) !important;
+                                position: absolute !important;
+                                bottom: 0 !important;
+                                left: 0 !important;
+                                right: 0 !important;
+                                z-index: 2000 !important;
+                                background: rgba(0, 0, 0, 0.8) !important;
+                                pointer-events: auto !important;
+                            `;
                         }
                         
-                        // Remover classe que esconde controles
-                        if (this.player.el()) {
-                            this.player.el().classList.remove('vjs-user-inactive');
+                        if (playerEl) {
+                            playerEl.classList.remove('vjs-user-inactive');
+                            playerEl.classList.add('vjs-controls-enabled');
+                            
+                            const video = playerEl.querySelector('video');
+                            if (video) {
+                                video.setAttribute('controls', 'controls');
+                                video.controls = true;
+                            }
                         }
-                    }, 500);
+                    }, 300);
                     
                     this.setupVideoSource(videoUrl, videoName);
                 });
@@ -337,7 +350,7 @@ class PlayerModule {
                            preload="auto" 
                            width="100%" 
                            height="100%"
-                           style="background: #000; outline: none;"
+                           style="background: #000; outline: none; object-fit: contain !important; object-position: center !important;"
                            crossorigin="anonymous"
                            onloadedmetadata="window.playerModule.detectOrientation(this)">
                         <source src="${videoUrl}" type="video/mp4">
@@ -359,9 +372,18 @@ class PlayerModule {
             this.video = video;
             
             if (video) {
-                // Forçar controles nativos
+                // Forçar controles nativos SEMPRE visíveis
                 video.controls = true;
                 video.setAttribute('controls', 'controls');
+                
+                // Garantir que controles nunca desapareçam
+                video.addEventListener('mouseleave', () => {
+                    video.controls = true;
+                });
+                
+                video.addEventListener('click', () => {
+                    video.controls = true;
+                });
                 
                 video.addEventListener('loadstart', () => console.log('✅ HTML5: Carregamento iniciado'));
                 video.addEventListener('canplay', () => console.log('✅ HTML5: Pode reproduzir'));

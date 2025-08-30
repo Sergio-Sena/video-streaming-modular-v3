@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Auth Service v3.0 - Video Streaming SStech
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.12
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+
+Resources:
+  AuthServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "auth-service-v3-${Environment}"
+      CodeUri: src/
+      Handler: handler.lambda_handler
+      MemorySize: 256
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:video-streaming-v3-user-*"
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Events:
+        LoginApi:
+          Type: Api
+          Properties:
+            Path: /auth/login
+            Method: post
+        RefreshApi:
+          Type: Api
+          Properties:
+            Path: /auth/refresh
+            Method: post
+        MfaSetupApi:
+          Type: Api
+          Properties:
+            Path: /auth/mfa-setup
+            Method: get
+        MfaVerifyApi:
+          Type: Api
+          Properties:
+            Path: /auth/mfa-verify
+            Method: post
+        OptionsApi:
+          Type: Api
+          Properties:
+            Path: /auth/{proxy+}
+            Method: options
+
+Outputs:
+  AuthServiceApi:
+    Description: "API Gateway endpoint URL for Auth Service"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  
+  AuthServiceFunction:
+    Description: "Auth Service Lambda Function ARN"
+    Value: !GetAtt AuthServiceFunction.Arn

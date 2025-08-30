@@ -1,0 +1,9 @@
+{
+  "httpMethod": "GET",
+  "path": "/auth/mfa-setup",
+  "queryStringParameters": {
+    "email": "sergiosenaadmin@sstech"
+  },
+  "headers": {},
+  "body": null
+}

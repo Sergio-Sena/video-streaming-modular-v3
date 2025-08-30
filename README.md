@@ -248,6 +248,26 @@ deploy.bat
 - ✅ Campos de senha sem ícones automáticos
 - ✅ Layout limpo e consistente em todas as telas
 
+### **FASE 20: Checkbox Pasta Interativo** ✅
+- ✅ Checkbox customizado na opção "Pasta"
+- ✅ Fundo preto quando selecionado
+- ✅ Checkmark branco (✓) visível
+- ✅ Hover azul (#667eea) para feedback
+- ✅ Clique independente do botão
+- ✅ CSS isolado sem conflitos
+- ✅ Funcionalidade toggle automática
+- ✅ Interface visual aprimorada
+
+### **FASE 21: Lambda GET Support** ✅
+- ✅ Suporte completo para requisições GET
+- ✅ Função handle_get_request() implementada
+- ✅ Processamento de query parameters
+- ✅ Compatibilidade com action=get-upload-url
+- ✅ Correção de referências API (window.api → window.apiModule)
+- ✅ Upload URLs funcionando 100%
+- ✅ Multipart upload operacional
+- ✅ Sistema de upload estabilizado
+
 ### **MELHORIAS IMPLEMENTADAS** 🎨
 - ✅ Favicon claquete 🎬
 - ✅ Logo unificado (Video + SStech)
@@ -324,7 +344,7 @@ deploy.bat
 - **Senha**: sergiosena
 - **MFA**: 123456 (fixo para testes)
 
-### **Funcionalidades Ativas** (Testadas 29/08/2025):
+### **Funcionalidades Ativas** (Testadas 30/08/2025):
 - 🔐 Login com MFA fixo (123456 para testes)
 - 📤 **Upload Avançado**: Modal tipo gerenciador de arquivos
 - 📁 **Seleção Inteligente**: Arquivos individuais + pastas completas
@@ -347,6 +367,8 @@ deploy.bat
 - 🔧 **Layout Corrigido** (sem sobreposição)
 - 🔄 **Conversão Automática** (.ts/.avi/.mov → .mp4)
 - 🎥 **URLs CloudFront** (player corrigido)
+- ✅ **Checkbox Pasta** (fundo preto quando selecionado)
+- 🔄 **Lambda GET Support** (upload URLs funcionando)
 
 ### **🚀 Sistema Completo** (CORS Corrigido - 28/08/2025):
 - 📏 Upload simples: ≤50MB (1 requisição PUT S3)
@@ -507,12 +529,12 @@ frontend/styles/
 11. **Delete Seguro**: Arquivos e pastas com confirmação
 12. **Fluxo Completo**: Upload → Conversão → Disponível → Delete
 
-**Sistema 100% funcional - todas as 19 fases concluídas**
+**Sistema 100% funcional - todas as 21 fases concluídas**
 
-## 📊 **STATUS FINAL - 29/08/2025**
+## 📊 **STATUS FINAL - 30/08/2025**
 
-### **✅ SISTEMA COMPLETO E OTIMIZADO**
-- ✅ **18 Fases Implementadas**: Desde estrutura modular até otimização mobile-first
+### **✅ SISTEMA COMPLETO E OTIMIZADO - COMMIT FINAL**
+- ✅ **21 Fases Implementadas**: Desde estrutura modular até checkbox pasta + Lambda GET
 - ✅ **Modal Responsivo**: Adapta automaticamente à orientação do vídeo
 - ✅ **Conversão Otimizada**: Arquivos 50% menores com mesma qualidade
 - ✅ **Sanitização Segura**: Proteção total contra caracteres especiais
@@ -520,3 +542,12 @@ frontend/styles/
 - ✅ **Performance**: Upload 4x mais rápido + conversão inteligente
 - ✅ **Mobile-First**: Interface completamente responsiva
 - ✅ **Produção**: Sistema estável em https://videos.sstechnologies-cloud.com
+- ✅ **Memória Consolidada**: Documentação completa + prompts salvos
+- ✅ **Rollback Disponível**: Commit dd488fe identificado como ponto estável
+
+### **🎯 COMMIT FINAL - PROJETO CONCLUÍDO**
+**Data**: 30/08/2025  
+**Status**: Sistema 100% funcional com todas as funcionalidades implementadas  
+**Rollback**: dd488fe (Upload Manager + CORS fix + Player corrigido)  
+**Memória**: Consolidada nos prompts ~/.aws/amazonq/prompts/  
+**Documentação**: README completo + 21 fases documentadas

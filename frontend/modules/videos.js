@@ -40,10 +40,21 @@ class VideosModule {
         }
 
         const uploadFolderBtn = document.getElementById('uploadFolderBtn');
+        const folderCheckbox = document.getElementById('folderCheckbox');
         if (uploadFolderBtn) {
             uploadFolderBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Toggle checkbox
+                folderCheckbox.checked = !folderCheckbox.checked;
+                // Abrir seletor de pasta
                 document.getElementById('folderInput').click();
+            });
+        }
+        
+        // Prevenir que clique no checkbox dispare o botão
+        if (folderCheckbox) {
+            folderCheckbox.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
         }
 
@@ -316,7 +327,7 @@ class VideosModule {
                 // Redireciona uploads não-MP4 para bucket de conversão
                 const isMP4 = file.name.toLowerCase().endsWith('.mp4');
                 const targetBucket = isMP4 ? 'video-streaming-sstech-eaddf6a1' : 'video-conversion-temp-sstech';
-                const response = await window.api.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
+                const response = await window.apiModule.getUploadUrl(file.name, file.type, file.size, folderPath, targetBucket);
                 
                 if (response.success) {
                     if (response.multipart) {
@@ -340,7 +351,7 @@ class VideosModule {
 
                     const startTime = Date.now();
                     
-                    await window.api.uploadToS3(response.uploadUrl, file, (progress, loaded, total) => {
+                    await window.apiModule.uploadToS3(response.uploadUrl, file, (progress, loaded, total) => {
                         const progressFill = progressDiv.querySelector('.progress-fill');
                         const progressPercent = progressDiv.querySelector('.upload-percent');
                         const uploadSpeed = progressDiv.querySelector('.upload-speed');
@@ -442,7 +453,7 @@ class VideosModule {
             
             // Verifica cada pasta
             for (const [folderPath, folderFiles] of Object.entries(filesByFolder)) {
-                const response = await window.api.request('/videos', {
+                const response = await window.apiModule.request('/videos', {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'check-existing',
@@ -609,7 +620,7 @@ class VideosModule {
         }
 
         try {
-            const response = await window.api.deleteFolder(`videos/${folderName}/`);
+            const response = await window.apiModule.deleteFolder(`videos/${folderName}/`);
             
             if (response.success) {
                 this.showMessage('Pasta deletada com sucesso!', 'success');
@@ -662,13 +673,13 @@ class VideosModule {
                 const partNumber = chunkIndex + 1;
 
                 // Obter URL para esta parte
-                const partResponse = await window.api.getPartUrl(uploadId, partNumber, key);
+                const partResponse = await window.apiModule.getPartUrl(uploadId, partNumber, key);
                 if (!partResponse.success) {
                     throw new Error(`Erro ao obter URL da parte ${partNumber}`);
                 }
 
                 // Upload da parte
-                const etag = await window.api.uploadChunk(partResponse.uploadUrl, chunk);
+                const etag = await window.apiModule.uploadChunk(partResponse.uploadUrl, chunk);
                 
                 // Atualizar progresso
                 uploadedBytes += chunk.size;
@@ -705,7 +716,7 @@ class VideosModule {
 
             // Completar multipart upload
             progressDiv.querySelector('.upload-status').textContent = 'Finalizando...';
-            const completeResponse = await window.api.completeMultipart(uploadId, parts, key);
+            const completeResponse = await window.apiModule.completeMultipart(uploadId, parts, key);
             
             if (completeResponse.success) {
                 progressDiv.querySelector('.upload-status').textContent = '✓ Concluído';

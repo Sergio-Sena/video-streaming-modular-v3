@@ -29,6 +29,9 @@ class AuthCognitoDebug {
     initEventListeners() {
         console.log('🎯 Configurando event listeners...');
         
+        // Carregar dados salvos
+        this.loadRememberedCredentials();
+        
         // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
@@ -40,6 +43,20 @@ class AuthCognitoDebug {
             console.log('✅ Login form listener adicionado');
         } else {
             console.warn('⚠️ loginForm não encontrado');
+        }
+
+        // Remember Me checkbox
+        const rememberMe = document.getElementById('rememberMe');
+        if (rememberMe) {
+            rememberMe.addEventListener('change', (e) => {
+                console.log('💾 Remember Me:', e.target.checked);
+                if (!e.target.checked) {
+                    localStorage.removeItem('rememberedEmail');
+                    localStorage.removeItem('rememberedPassword');
+                    localStorage.removeItem('rememberMeChecked');
+                }
+            });
+            console.log('✅ Remember Me listener adicionado');
         }
 
         // Logout
@@ -116,6 +133,26 @@ class AuthCognitoDebug {
         setTimeout(() => this.initAdminPanel(), 200);
     }
 
+    loadRememberedCredentials() {
+        console.log('🔍 Verificando credenciais salvas...');
+        
+        const rememberedEmail = localStorage.getItem('rememberedEmail');
+        const rememberedPassword = localStorage.getItem('rememberedPassword');
+        const rememberMeChecked = localStorage.getItem('rememberMeChecked') === 'true';
+        
+        if (rememberedEmail && rememberedPassword && rememberMeChecked) {
+            console.log('✅ Credenciais encontradas - preenchendo campos');
+            
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const rememberMeCheckbox = document.getElementById('rememberMe');
+            
+            if (emailInput) emailInput.value = rememberedEmail;
+            if (passwordInput) passwordInput.value = rememberedPassword;
+            if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
+        }
+    }
+
     async handleLogin() {
         console.log('🔑 Iniciando processo de login...');
         
@@ -137,6 +174,15 @@ class AuthCognitoDebug {
             
             if (response.success) {
                 console.log('✅ Login bem-sucedido!');
+                
+                // Salvar credenciais se checkbox marcado
+                const rememberMe = document.getElementById('rememberMe');
+                if (rememberMe && rememberMe.checked) {
+                    console.log('💾 Salvando credenciais...');
+                    localStorage.setItem('rememberedEmail', email);
+                    localStorage.setItem('rememberedPassword', password);
+                    localStorage.setItem('rememberMeChecked', 'true');
+                }
                 
                 localStorage.setItem('authToken', response.token);
                 localStorage.setItem('userEmail', email);

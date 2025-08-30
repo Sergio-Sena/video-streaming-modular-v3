@@ -1,6 +1,8 @@
 import json
 import boto3
 import os
+import re
+import unicodedata
 from datetime import datetime
 
 def handler(event, context):
@@ -53,6 +55,20 @@ def should_convert(key):
             
     return False
 
+def sanitize_filename(filename):
+    """Sanitiza nome do arquivo removendo caracteres especiais"""
+    # Normaliza caracteres unicode (ã → a, ç → c)
+    filename = unicodedata.normalize('NFD', filename)
+    filename = ''.join(c for c in filename if unicodedata.category(c) != 'Mn')
+    
+    # Remove caracteres especiais, mantém apenas: a-zA-Z0-9._-
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    
+    # Remove múltiplos underscores consecutivos
+    filename = re.sub(r'_+', '_', filename)
+    
+    return filename
+
 def start_conversion(source_bucket, source_key):
     """Inicia job de conversão no MediaConvert"""
     
@@ -68,23 +84,21 @@ def start_conversion(source_bucket, source_key):
     # Gerar nome do arquivo de saída
     output_key = generate_output_key(source_key)
     
-    # Configuração do job - Conversão Universal para MP4
+    # Configuração do job - FUNCIONAL
     job_settings = {
         "Role": "arn:aws:iam::969430605054:role/MediaConvertRole",
         "Settings": {
             "TimecodeConfig": {"Source": "ZEROBASED"},
             "OutputGroups": [{
-                "Name": "MP4_Universal",
+                "Name": "File Group",
                 "Outputs": [{
                     "VideoDescription": {
                         "CodecSettings": {
                             "Codec": "H_264",
                             "H264Settings": {
                                 "RateControlMode": "VBR",
-                                "Bitrate": 4000000,  # 4 Mbps
-                                "QualityTuningLevel": "SINGLE_PASS_HQ",
-                                "CodecProfile": "HIGH",
-                                "CodecLevel": "AUTO"
+                                "Bitrate": 4000000,
+                                "QualityTuningLevel": "SINGLE_PASS_HQ"
                             }
                         }
                     },
@@ -92,7 +106,7 @@ def start_conversion(source_bucket, source_key):
                         "CodecSettings": {
                             "Codec": "AAC",
                             "AacSettings": {
-                                "Bitrate": 128000,  # 128 kbps
+                                "Bitrate": 128000,
                                 "SampleRate": 48000,
                                 "CodingMode": "CODING_MODE_2_0"
                             }
@@ -100,12 +114,8 @@ def start_conversion(source_bucket, source_key):
                     }],
                     "ContainerSettings": {
                         "Container": "MP4",
-                        "Mp4Settings": {
-                            "FreeSpaceBox": "EXCLUDE",
-                            "MoovPlacement": "PROGRESSIVE_DOWNLOAD"
-                        }
-                    },
-                    "NameModifier": "_mp4"
+                        "Mp4Settings": {}
+                    }
                 }],
                 "OutputGroupSettings": {
                     "Type": "FILE_GROUP_SETTINGS",
@@ -117,22 +127,17 @@ def start_conversion(source_bucket, source_key):
             "Inputs": [{
                 "AudioSelectors": {
                     "Audio Selector 1": {
-                        "DefaultSelection": "DEFAULT",
-                        "SelectorType": "TRACK"
+                        "DefaultSelection": "DEFAULT"
                     }
                 },
-                "VideoSelector": {
-                    "ColorSpace": "FOLLOW"
-                },
-                "TimecodeSource": "ZEROBASED",
+                "VideoSelector": {},
                 "FileInput": f"s3://{source_bucket}/{source_key}"
             }]
         },
         "Queue": "arn:aws:mediaconvert:us-east-1:969430605054:queues/Default",
         "UserMetadata": {
             "OriginalKey": source_key,
-            "SourceBucket": source_bucket,
-            "ConversionType": "Universal_to_MP4"
+            "SourceBucket": source_bucket
         }
     }
     
@@ -166,5 +171,8 @@ def generate_output_key(source_key):
     # Remove prefixo 'videos/' se existir
     if base_name.startswith('videos/'):
         base_name = base_name[7:]
+    
+    # Sanitiza o nome
+    base_name = sanitize_filename(base_name)
     
     return f"{base_name}.mp4"

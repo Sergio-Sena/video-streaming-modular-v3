@@ -1,0 +1,1 @@
+Este é um teste final da conversão automática - arquivo maior para simular vídeo real

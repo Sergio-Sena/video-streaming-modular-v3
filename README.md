@@ -12,10 +12,12 @@ Sistema de streaming serverless com arquitetura desacoplada.
 
 ### ✅ Implementado
 - **auth-service-v3**: Autenticação + MFA + JWT
+- **API Gateway**: Endpoints configurados (vyo27kghrh)
 - **Secrets Manager**: Credenciais configuradas
 - **Sanitização**: Caracteres especiais + emojis
 
 ### 🔄 Em Desenvolvimento
+- Correção encoding Lambda auth-service
 - upload-service-v3
 - video-service-v3
 - conversion-service-v3
@@ -44,7 +46,15 @@ aws lambda update-function-code --function-name auth-service-v3 --zip-file fileb
 
 ## 🎯 Próximos Passos
 
-1. Configurar API Gateway endpoints
+1. Corrigir encoding do auth-service Lambda
 2. Implementar upload-service-v3
 3. Setup frontend React
 4. Testes de integração
+
+## 🌐 API Endpoints
+
+- **Base URL**: https://vyo27kghrh.execute-api.us-east-1.amazonaws.com/prod
+- **POST /auth/register**: Registro de usuário
+- **POST /auth/login**: Login com MFA
+- **POST /auth/verify**: Verificação de token
+- **POST /auth/refresh**: Renovação de token

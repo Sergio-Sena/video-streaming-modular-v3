@@ -1,0 +1,9 @@
+{
+  "rawPath": "/upload/abort",
+  "requestContext": {
+    "http": {
+      "method": "POST"
+    }
+  },
+  "body": "{\"file_key\":\"videos/2025/08/30/64748056-ef80-4a94-b920-85bd425585ca-large-video.mp4\",\"upload_id\":\"WdKJMlpNN5b3ixLZkUZDhLtzfkaC3qyCVJknx6Q93AgQbW2uDXJDF7IyZ8ZSjiR8ImhlUKOMPkaYNqNEFLzgAkKCsmGSfpQS7nJlBeRybTufmzmEJmRp3pjtdaWMWzsV1C2vOsnWKWsXwm3KkMtDQoHVJFNSn5OVWeMCpbqWcH4-\"}"
+}

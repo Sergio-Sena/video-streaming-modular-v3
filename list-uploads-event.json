@@ -1,0 +1,8 @@
+{
+  "rawPath": "/upload/list",
+  "requestContext": {
+    "http": {
+      "method": "GET"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "rawPath": "/upload/initiate",
+  "requestContext": {
+    "http": {
+      "method": "POST"
+    }
+  },
+  "body": "{\"file_name\":\"large-video.mp4\",\"file_size\":104857600,\"content_type\":\"video/mp4\"}"
+}

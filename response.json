@@ -1,0 +1,1 @@
+{"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "{\"status\": \"healthy\", \"timestamp\": \"2025-09-01T19:30:51.779902\", \"service\": \"Drive Online Auth (Secure)\", \"features\": [\"JWT\", \"Password Reset\", \"Secrets Manager\"]}"}

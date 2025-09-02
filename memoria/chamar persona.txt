@@ -1,0 +1,2 @@
+@persona produto + "Leia DOCUMENTO_CONSOLIDADO_COMPLETO.md"
+@workspace + "Drive Online - Sistema completo de armazenamento pessoal com conversão automática de vídeos, organização inteligente por tipo de arquivo e interface React moderna. Backend serverless AWS com 6 Lambda functions, conversão MediaConvert automática (.ts/.avi/.mov → .mp4), upload multipart, autenticação JWT+MFA. 100% funcional em produção."

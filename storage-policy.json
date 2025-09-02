@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowLambdaAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::969430605054:role/video-streaming-lambda-role"
+      },
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::drive-online-storage/*"
+    },
+    {
+      "Sid": "AllowLambdaListBucket",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::969430605054:role/video-streaming-lambda-role"
+      },
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::drive-online-storage"
+    }
+  ]
+}

@@ -314,7 +314,8 @@ def send_reset_email(email: str, token: str):
     """Send reset email via SNS"""
     try:
         sns = boto3.client('sns')
-        reset_link = f"http://localhost:3000/reset-password?token={token}"
+        frontend_url = os.getenv('FRONTEND_URL', 'https://videos.sstechnologies-cloud.com')
+        reset_link = f"{frontend_url}/reset-password?token={token}"
         
         message = f"""
 Olá!
@@ -333,7 +334,7 @@ Equipe Drive Online
 """
         
         # Use configured SNS topic
-        topic_arn = "arn:aws:sns:us-east-1:969430605054:video-streaming-password-reset"
+        topic_arn = "arn:aws:sns:us-east-1:969430605054:drive-online-password-reset"
         
         sns.publish(
             TopicArn=topic_arn,
@@ -346,7 +347,8 @@ Equipe Drive Online
     except Exception as e:
         print(f"Error sending reset email: {e}")
         # Fallback - print link for development
-        print(f"Reset link for {email}: http://localhost:3000/reset-password?token={token}")
+        frontend_url = os.getenv('FRONTEND_URL', 'https://videos.sstechnologies-cloud.com')
+        print(f"Reset link for {email}: {frontend_url}/reset-password?token={token}")
 
 def is_valid_reset_token(token: str) -> bool:
     """Check if reset token is valid"""

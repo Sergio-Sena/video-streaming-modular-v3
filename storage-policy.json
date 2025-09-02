@@ -5,7 +5,7 @@
       "Sid": "AllowLambdaAccess",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::969430605054:role/video-streaming-lambda-role"
+        "AWS": "arn:aws:iam::969430605054:role/drive-online-lambda-role"
       },
       "Action": [
         "s3:GetObject",
@@ -18,7 +18,7 @@
       "Sid": "AllowLambdaListBucket",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::969430605054:role/video-streaming-lambda-role"
+        "AWS": "arn:aws:iam::969430605054:role/drive-online-lambda-role"
       },
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::drive-online-storage"

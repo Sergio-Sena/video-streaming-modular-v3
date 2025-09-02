@@ -14,13 +14,17 @@ class Settings:
     DYNAMODB_TABLE_TOKENS: str = os.getenv("DYNAMODB_TABLE_TOKENS", "drive-online-tokens")
     
     # SNS Configuration
-    SNS_TOPIC_ARN: Optional[str] = os.getenv("SNS_TOPIC_ARN", "arn:aws:sns:us-east-1:969430605054:video-streaming-password-reset")
+    SNS_TOPIC_ARN: Optional[str] = os.getenv("SNS_TOPIC_ARN", "arn:aws:sns:us-east-1:969430605054:drive-online-password-reset")
+    
+    # Frontend URL Configuration
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://videos.sstechnologies-cloud.com")
     
     # CORS Configuration
     ALLOWED_ORIGINS: list = [
         "http://localhost:3000",
         "https://drive-online.com",
-        "https://*.drive-online.com"
+        "https://*.drive-online.com",
+        "https://*.cloudfront.net"
     ]
     
     # User Configuration (no hardcoded passwords)

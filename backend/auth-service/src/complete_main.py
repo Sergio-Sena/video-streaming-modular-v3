@@ -15,7 +15,7 @@ import os
 
 # Constants from environment variables
 S3_BUCKET = os.environ.get('S3_BUCKET', 'drive-online-storage')
-SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:969430605054:video-streaming-password-reset')
+SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:969430605054:drive-online-password-reset')
 DEFAULT_USER_EMAIL = os.environ.get('DEFAULT_USER_EMAIL', 'user@example.com')
 DEFAULT_USER_ID = os.environ.get('DEFAULT_USER_ID', 'user-default')
 DEFAULT_USER_NAME = os.environ.get('DEFAULT_USER_NAME', 'Default User')
@@ -239,7 +239,7 @@ def handle_forgot_password(body):
         reset_token = create_reset_token(email)
         
         try:
-            reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
+            reset_link = f"https://videos.sstechnologies-cloud.com/reset-password?token={reset_token}"
             
             message = f"""
 Olá!

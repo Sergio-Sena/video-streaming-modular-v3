@@ -250,7 +250,7 @@ Equipe Drive Online
 """
             
             sns.publish(
-                TopicArn="arn:aws:sns:us-east-1:969430605054:video-streaming-password-reset",
+                TopicArn="arn:aws:sns:us-east-1:969430605054:drive-online-password-reset",
                 Message=message,
                 Subject='Drive Online - Redefinição de Senha'
             )

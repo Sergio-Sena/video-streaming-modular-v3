@@ -74,7 +74,7 @@ def deploy_lambda(zip_path: Path, function_name: str = "drive-online-auth-servic
             lambda_client.create_function(
                 FunctionName=function_name,
                 Runtime='python3.12',
-                Role='arn:aws:iam::969430605054:role/video-streaming-lambda-role',
+                Role='arn:aws:iam::969430605054:role/drive-online-lambda-role',
                 Handler='complete_main.handler',
                 Code={'ZipFile': f.read()},
                 Description='Drive Online Auth Service',

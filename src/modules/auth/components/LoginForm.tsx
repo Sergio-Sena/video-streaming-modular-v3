@@ -28,10 +28,25 @@ const LoginForm = () => {
       setSuccess('Login realizado com sucesso!')
       console.log('Login successful:', result)
       
-      // Redirecionar para dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1000)
+      // Aguardar um pouco e verificar se o token foi salvo
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const savedToken = authService.getToken()
+      const savedUser = authService.getUser()
+      
+      console.log('Verificação pós-login:')
+      console.log('- Token salvo:', savedToken ? 'OK' : 'ERRO')
+      console.log('- User salvo:', savedUser ? 'OK' : 'ERRO')
+      console.log('- Autenticado:', authService.isAuthenticated())
+      
+      if (savedToken && savedUser) {
+        // Redirecionar para dashboard
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 300)
+      } else {
+        throw new Error('Autenticação não foi salva corretamente')
+      }
     } catch (err) {
       console.error('Login error:', err)
       setError('Email ou senha inválidos')

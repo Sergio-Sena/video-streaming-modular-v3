@@ -1,0 +1,15 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "drive-online-storage"
+        },
+        "object": {
+          "key": "users/user-sergio-sena/1756847725-test.ts",
+          "size": 10000000
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Video Requests - Drive Online</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #1a4a1a; border: 1px solid #4a8a4a; }
+        .error { background: #4a1a1a; border: 1px solid #8a4a4a; }
+        .info { background: #1a1a4a; border: 1px solid #4a4a8a; }
+        button { padding: 10px 20px; margin: 5px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        video { width: 100%; max-width: 600px; margin: 10px 0; }
+        .url-test { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Video Requests - Drive Online</h1>
+        
+        <div class="test-section">
+            <h2>1. Teste de Requisição Direta</h2>
+            <button onclick="testDirectRequest()">Testar Requisição ao S3</button>
+            <div id="directResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Teste de Presigned URL</h2>
+            <button onclick="testPresignedUrl()">Gerar e Testar Presigned URL</button>
+            <div id="presignedResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Teste de Player de Vídeo</h2>
+            <button onclick="testVideoPlayer()">Testar Player com URL</button>
+            <div id="playerResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Informações de Rede</h2>
+            <div id="networkInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        const TEST_VIDEO = 'users/user-sergio-sena/1756853751-Video automacao.mp4';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            element.appendChild(div);
+        }
+
+        async function testDirectRequest() {
+            const resultId = 'directResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, 'Testando requisição direta ao endpoint de download...', 'info');
+            
+            try {
+                const url = `${API_BASE}/files/${encodeURIComponent(TEST_VIDEO)}/download`;
+                log(resultId, `URL: ${url}`, 'info');
+                
+                const response = await fetch(url, {
+                    method: 'HEAD', // Usar HEAD para verificar headers sem baixar o arquivo
+                    mode: 'cors'
+                });
+                
+                log(resultId, `Status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                // Verificar headers importantes
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                log(resultId, `Content-Type: ${headers['content-type'] || 'Não definido'}`, 
+                    headers['content-type']?.includes('video') ? 'success' : 'error');
+                
+                log(resultId, `Access-Control-Allow-Origin: ${headers['access-control-allow-origin'] || 'Não definido'}`, 
+                    headers['access-control-allow-origin'] ? 'success' : 'error');
+                
+                log(resultId, `Accept-Ranges: ${headers['accept-ranges'] || 'Não definido'}`, 
+                    headers['accept-ranges'] === 'bytes' ? 'success' : 'error');
+                
+                // Mostrar todos os headers
+                log(resultId, `Headers completos: ${JSON.stringify(headers, null, 2)}`, 'info');
+                
+            } catch (error) {
+                log(resultId, `Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPresignedUrl() {
+            const resultId = 'presignedResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, 'Gerando presigned URL...', 'info');
+            
+            try {
+                // Simular token (em produção, pegar do localStorage)
+                const token = localStorage.getItem('token') || 'TOKEN_NECESSARIO';
+                
+                const response = await fetch(`${API_BASE}/files/${encodeURIComponent(TEST_VIDEO)}/download-url`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(resultId, `Presigned URL gerada com sucesso`, 'success');
+                
+                // Testar a presigned URL
+                const presignedResponse = await fetch(data.downloadUrl, {
+                    method: 'HEAD',
+                    mode: 'cors'
+                });
+                
+                log(resultId, `Teste presigned URL - Status: ${presignedResponse.status}`, 
+                    presignedResponse.ok ? 'success' : 'error');
+                
+                const presignedHeaders = {};
+                presignedResponse.headers.forEach((value, key) => {
+                    presignedHeaders[key] = value;
+                });
+                
+                log(resultId, `Presigned Content-Type: ${presignedHeaders['content-type'] || 'Não definido'}`, 
+                    presignedHeaders['content-type']?.includes('video') ? 'success' : 'error');
+                
+            } catch (error) {
+                log(resultId, `Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVideoPlayer() {
+            const resultId = 'playerResult';
+            document.getElementById(resultId).innerHTML = '';
+            
+            log(resultId, 'Testando player de vídeo...', 'info');
+            
+            try {
+                const url = `${API_BASE}/files/${encodeURIComponent(TEST_VIDEO)}/download`;
+                
+                // Criar elemento de vídeo
+                const video = document.createElement('video');
+                video.controls = true;
+                video.style.width = '100%';
+                video.style.maxWidth = '600px';
+                
+                // Eventos do vídeo
+                video.addEventListener('loadstart', () => {
+                    log(resultId, 'Video: loadstart - Iniciando carregamento', 'info');
+                });
+                
+                video.addEventListener('loadedmetadata', () => {
+                    log(resultId, 'Video: loadedmetadata - Metadados carregados', 'success');
+                });
+                
+                video.addEventListener('canplay', () => {
+                    log(resultId, 'Video: canplay - Pode reproduzir', 'success');
+                });
+                
+                video.addEventListener('error', (e) => {
+                    log(resultId, `Video: error - ${e.target.error?.message || 'Erro desconhecido'}`, 'error');
+                });
+                
+                video.src = url;
+                document.getElementById(resultId).appendChild(video);
+                
+                log(resultId, `Player criado com URL: ${url}`, 'info');
+                
+            } catch (error) {
+                log(resultId, `Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Carregar informações de rede ao inicializar
+        window.addEventListener('load', () => {
+            const networkInfo = document.getElementById('networkInfo');
+            networkInfo.innerHTML = `
+                <div class="url-test">
+                    <strong>Informações do Ambiente:</strong><br>
+                    Origin: ${window.location.origin}<br>
+                    User Agent: ${navigator.userAgent}<br>
+                    Suporte a CORS: ${typeof fetch !== 'undefined' ? 'Sim' : 'Não'}<br>
+                    API Base: ${API_BASE}<br>
+                    Vídeo de Teste: ${TEST_VIDEO}
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

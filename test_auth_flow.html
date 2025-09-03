@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Auth Flow</title>
+</head>
+<body>
+    <h1>Teste Fluxo Completo</h1>
+    <button onclick="testFullFlow()">Testar Fluxo Completo</button>
+    <div id="results"></div>
+    
+    <script>
+        function log(msg) {
+            document.getElementById('results').innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+        
+        async function testFullFlow() {
+            document.getElementById('results').innerHTML = '';
+            
+            // 1. Limpar localStorage
+            log('1. Limpando localStorage...');
+            localStorage.clear();
+            
+            // 2. Fazer login
+            log('2. Fazendo login...');
+            try {
+                const loginResponse = await fetch('https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'senanetworker@gmail.com',
+                        password: 'sergiosena'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log('❌ Login falhou: ' + loginResponse.status);
+                    return;
+                }
+                
+                const loginData = await loginResponse.json();
+                log('✅ Login OK: ' + JSON.stringify(loginData));
+                
+                // 3. Salvar no localStorage
+                log('3. Salvando no localStorage...');
+                localStorage.setItem('auth_token', loginData.token);
+                localStorage.setItem('auth_user', JSON.stringify(loginData.user));
+                
+                // 4. Verificar se foi salvo
+                log('4. Verificando localStorage...');
+                const savedToken = localStorage.getItem('auth_token');
+                const savedUser = localStorage.getItem('auth_user');
+                log('Token salvo: ' + (savedToken ? 'SIM' : 'NÃO'));
+                log('User salvo: ' + (savedUser ? 'SIM' : 'NÃO'));
+                
+                // 5. Testar requisição autenticada
+                log('5. Testando requisição autenticada...');
+                const filesResponse = await fetch('https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files', {
+                    headers: {
+                        'Authorization': 'Bearer ' + savedToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log('Files response status: ' + filesResponse.status);
+                
+                if (filesResponse.ok) {
+                    const filesData = await filesResponse.json();
+                    log('✅ Files OK: ' + JSON.stringify(filesData));
+                } else {
+                    log('❌ Files falhou: ' + filesResponse.status);
+                    const errorText = await filesResponse.text();
+                    log('Error: ' + errorText);
+                }
+                
+            } catch (error) {
+                log('❌ Erro: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

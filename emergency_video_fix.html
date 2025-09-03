@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emergência - Teste de Vídeo</title>
+</head>
+<body>
+    <h1>Teste de Emergência</h1>
+    
+    <!-- Teste 1: URL direta CloudFront -->
+    <h3>1. CloudFront:</h3>
+    <video controls width="400">
+        <source src="https://d3j8k2q4r5s6t7.cloudfront.net/users/user-sergio-sena/1756853751-Video automacao.mp4" type="video/mp4">
+    </video>
+    
+    <!-- Teste 2: URL direta S3 -->
+    <h3>2. S3 Direto:</h3>
+    <video controls width="400">
+        <source src="https://drive-online-storage.s3.amazonaws.com/users/user-sergio-sena/1756853751-Video automacao.mp4" type="video/mp4">
+    </video>
+    
+    <!-- Teste 3: Vídeo local de exemplo -->
+    <h3>3. Vídeo Local (deve funcionar):</h3>
+    <video controls width="400">
+        <source src="/sample-video.mp4" type="video/mp4">
+    </video>
+    
+    <script>
+        // Log de eventos para debug
+        document.querySelectorAll('video').forEach((video, index) => {
+            video.addEventListener('error', (e) => {
+                console.error(`Vídeo ${index + 1} erro:`, e.target.error);
+            });
+            
+            video.addEventListener('canplay', () => {
+                console.log(`Vídeo ${index + 1} pode reproduzir!`);
+            });
+        });
+    </script>
+</body>
+</html>

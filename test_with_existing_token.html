@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste com Token Existente</title>
+</head>
+<body>
+    <h1>🔑 Teste Signed URLs</h1>
+    
+    <div>
+        <input type="text" id="tokenInput" placeholder="Cole o token aqui" style="width: 500px; padding: 10px;">
+        <button onclick="saveToken()">Salvar Token</button>
+    </div>
+    
+    <div>
+        <button onclick="testSignedUrl()">Testar Signed URL</button>
+        <button onclick="clearToken()">Limpar Token</button>
+    </div>
+    
+    <div id="status" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc;"></div>
+    
+    <video id="videoPlayer" controls style="width: 100%; max-width: 600px; display: none;">
+        Seu navegador não suporta vídeo.
+    </video>
+    
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        const FILE_KEY = 'users/user-sergio-sena/1756853751-Video automacao.mp4';
+        
+        function saveToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (token) {
+                localStorage.setItem('token', token);
+                updateStatus('✅ Token salvo no localStorage', 'success');
+            } else {
+                updateStatus('❌ Digite um token válido', 'error');
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('token');
+            document.getElementById('tokenInput').value = '';
+            updateStatus('Token removido', 'info');
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.backgroundColor = type === 'success' ? '#d4edda' : 
+                                         type === 'error' ? '#f8d7da' : '#d1ecf1';
+        }
+        
+        async function testSignedUrl() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                updateStatus('❌ Salve um token primeiro', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('🔄 Gerando signed URL...', 'info');
+                
+                const response = await fetch(`${API_BASE}/files/${encodeURIComponent(FILE_KEY)}/download-url`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                const signedUrl = data.downloadUrl;
+                
+                updateStatus('✅ Signed URL gerada! Testando vídeo...', 'success');
+                
+                // Testar no player
+                const video = document.getElementById('videoPlayer');
+                video.src = signedUrl;
+                video.style.display = 'block';
+                video.load();
+                
+                // Eventos do vídeo
+                video.addEventListener('loadedmetadata', () => {
+                    updateStatus(`🎉 SUCESSO! Vídeo carregado (${Math.round(video.duration)}s)`, 'success');
+                });
+                
+                video.addEventListener('error', (e) => {
+                    const error = e.target.error;
+                    updateStatus(`❌ Erro no vídeo: ${error?.message || 'Desconhecido'}`, 'error');
+                });
+                
+                console.log('Signed URL:', signedUrl);
+                
+            } catch (error) {
+                updateStatus(`❌ Erro: ${error.message}`, 'error');
+                console.error('Erro completo:', error);
+            }
+        }
+        
+        // Verificar se já tem token
+        window.addEventListener('load', () => {
+            const existingToken = localStorage.getItem('token');
+            if (existingToken) {
+                document.getElementById('tokenInput').value = existingToken;
+                updateStatus('Token encontrado no localStorage', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

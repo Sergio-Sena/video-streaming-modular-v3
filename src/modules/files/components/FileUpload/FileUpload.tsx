@@ -72,7 +72,7 @@ export const FileUpload = ({ onUploadComplete, onClose }: FileUploadProps) => {
           }
         )
 
-        // Confirmar upload
+        // Confirmar upload e copiar vídeo se necessário
         await uploadService.confirmUpload(fileId)
 
         // Marcar como completo

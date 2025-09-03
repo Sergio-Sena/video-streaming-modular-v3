@@ -1,0 +1,27 @@
+{
+  "ResponseHeadersPolicy": {
+    "Name": "drive-online-cors-policy",
+    "Comment": "CORS policy for Drive Online video streaming",
+    "CorsConfig": {
+      "AccessControlAllowCredentials": false,
+      "AccessControlAllowHeaders": {
+        "Quantity": 4,
+        "Items": ["Range", "Content-Range", "Content-Type", "Authorization"]
+      },
+      "AccessControlAllowMethods": {
+        "Quantity": 3,
+        "Items": ["GET", "HEAD", "OPTIONS"]
+      },
+      "AccessControlAllowOrigins": {
+        "Quantity": 2,
+        "Items": ["https://videos.sstechnologies-cloud.com", "http://localhost:3000"]
+      },
+      "AccessControlExposeHeaders": {
+        "Quantity": 4,
+        "Items": ["Content-Range", "Content-Length", "Accept-Ranges", "ETag"]
+      },
+      "AccessControlMaxAgeSec": 3600,
+      "OriginOverride": true
+    }
+  }
+}

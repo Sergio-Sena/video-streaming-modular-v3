@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test React Auth</title>
+</head>
+<body>
+    <h1>Teste Simulando React</h1>
+    <button onclick="simulateReactFlow()">Simular Fluxo React</button>
+    <div id="results"></div>
+    
+    <script>
+        function log(msg) {
+            document.getElementById('results').innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+        
+        // Simular o authService do React
+        class AuthService {
+            constructor() {
+                this.TOKEN_KEY = 'auth_token';
+                this.USER_KEY = 'auth_user';
+            }
+            
+            async login(email, password) {
+                console.log('AuthService.login - Iniciando login para:', email);
+                
+                const response = await fetch('https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                console.log('AuthService.login - Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error('Credenciais inválidas');
+                }
+
+                const data = await response.json();
+                console.log('AuthService.login - Response data:', data);
+                
+                const { token, user } = data;
+                
+                console.log('AuthService.login - Token recebido:', token ? token.substring(0, 20) + '...' : 'null');
+                console.log('AuthService.login - User recebido:', user);
+                
+                this.setAuth(token, user);
+                
+                // Verificar se foi salvo
+                console.log('AuthService.login - Token salvo:', this.getToken() ? 'sim' : 'não');
+                console.log('AuthService.login - User salvo:', this.getUser() ? 'sim' : 'não');
+                
+                return { user, token };
+            }
+            
+            setAuth(token, user) {
+                try {
+                    localStorage.setItem(this.TOKEN_KEY, token);
+                    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+                    console.log('AuthService.setAuth - Token salvo:', token ? 'OK' : 'ERRO');
+                    console.log('AuthService.setAuth - User salvo:', user ? 'OK' : 'ERRO');
+                } catch (error) {
+                    console.error('Erro ao salvar no localStorage:', error);
+                    throw new Error('Falha ao salvar autenticação');
+                }
+            }
+            
+            getToken() {
+                return localStorage.getItem(this.TOKEN_KEY);
+            }
+            
+            getUser() {
+                const userStr = localStorage.getItem(this.USER_KEY);
+                return userStr ? JSON.parse(userStr) : null;
+            }
+            
+            isAuthenticated() {
+                return !!(this.getToken() && this.getUser());
+            }
+        }
+        
+        // Simular ApiClient
+        class ApiClient {
+            constructor() {
+                this.baseURL = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+            }
+            
+            getHeaders() {
+                const token = authService.getToken();
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                    console.log('ApiClient - Token incluído:', token.substring(0, 20) + '...');
+                } else {
+                    console.warn('ApiClient - Nenhum token encontrado');
+                }
+                
+                return headers;
+            }
+            
+            async get(endpoint) {
+                console.log(`ApiClient.get - ${endpoint}`);
+                const response = await fetch(`${this.baseURL}${endpoint}`, {
+                    method: 'GET',
+                    headers: this.getHeaders()
+                });
+                
+                console.log(`ApiClient.get - ${endpoint} - Status: ${response.status}`);
+                return response;
+            }
+        }
+        
+        const authService = new AuthService();
+        const apiClient = new ApiClient();
+        
+        async function simulateReactFlow() {
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                // 1. Limpar localStorage
+                log('1. Limpando localStorage...');
+                localStorage.clear();
+                
+                // 2. Simular login do React
+                log('2. Simulando login do React...');
+                const result = await authService.login('senanetworker@gmail.com', 'sergiosena');
+                log('✅ Login React OK: ' + JSON.stringify(result));
+                
+                // 3. Verificar autenticação
+                log('3. Verificando autenticação...');
+                const isAuth = authService.isAuthenticated();
+                log('Autenticado: ' + (isAuth ? 'SIM' : 'NÃO'));
+                
+                // 4. Simular requisição do Dashboard
+                log('4. Simulando requisição do Dashboard...');
+                const response = await apiClient.get('/files');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Dashboard OK: ' + data.files.length + ' arquivos');
+                } else {
+                    log('❌ Dashboard falhou: ' + response.status);
+                }
+                
+            } catch (error) {
+                log('❌ Erro: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse, RedirectResponse, Response
 from pydantic import BaseModel
 from mangum import Mangum
 import boto3
@@ -439,6 +440,510 @@ def invalidate_reset_token(token: str):
         
     except Exception as e:
         print(f"Error invalidating token: {e}")
+
+# S3 and File Management
+s3_client = boto3.client('s3')
+sts_client = boto3.client('sts')
+STORAGE_BUCKET = 'drive-online-storage'
+PUBLIC_VIDEO_BUCKET = 'automacao-video'
+
+def is_video_file(filename: str) -> bool:
+    """Check if file is a video"""
+    video_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.ts', '.m4v']
+    return any(filename.lower().endswith(ext) for ext in video_extensions)
+
+def copy_to_public_bucket(file_key: str, user_id: str):
+    """Copy video to public bucket for streaming"""
+    try:
+        filename = file_key.split('/')[-1]
+        public_key = f"videos/{user_id}/{filename}"
+        
+        s3_client.copy_object(
+            CopySource={'Bucket': STORAGE_BUCKET, 'Key': file_key},
+            Bucket=PUBLIC_VIDEO_BUCKET,
+            Key=public_key,
+            ContentType='video/mp4'
+        )
+        
+        print(f"Video copied to public bucket: {public_key}")
+        return public_key
+        
+    except Exception as e:
+        print(f"Error copying to public bucket: {e}")
+        raise
+
+@app.get("/files")
+async def get_files(current_user: dict = Depends(verify_token)):
+    """Get user files from S3"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        prefix = f"users/{user_id}/"
+        
+        response = s3_client.list_objects_v2(
+            Bucket=STORAGE_BUCKET,
+            Prefix=prefix
+        )
+        
+        files = []
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                # Skip folder markers
+                if obj['Key'].endswith('/'):
+                    continue
+                    
+                file_name = obj['Key'].replace(prefix, '')
+                if not file_name:  # Skip empty names
+                    continue
+                    
+                # Generate presigned URL for file access
+                file_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': STORAGE_BUCKET, 'Key': obj['Key']},
+                    ExpiresIn=3600  # 1 hour
+                )
+                
+                # Determine file type
+                file_type = 'application/octet-stream'
+                if file_name.lower().endswith(('.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.ts')):
+                    file_type = 'video/mp4'
+                elif file_name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp')):
+                    file_type = 'image/jpeg'
+                elif file_name.lower().endswith('.pdf'):
+                    file_type = 'application/pdf'
+                
+                files.append({
+                    'id': obj['Key'],
+                    'name': file_name,
+                    'size': obj['Size'],
+                    'type': file_type,
+                    'url': file_url,
+                    'createdAt': obj['LastModified'].isoformat(),
+                    'lastModified': obj['LastModified'].isoformat()
+                })
+        
+        # Ordenar por data de modificação (mais recente primeiro)
+        files.sort(key=lambda x: x['lastModified'], reverse=True)
+        
+        return {'files': files}
+        
+    except Exception as e:
+        print(f"Error getting files: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving files")
+
+@app.get("/user/storage")
+async def get_storage_info(current_user: dict = Depends(verify_token)):
+    """Get user storage information"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        prefix = f"users/{user_id}/"
+        
+        response = s3_client.list_objects_v2(
+            Bucket=STORAGE_BUCKET,
+            Prefix=prefix
+        )
+        
+        total_size = 0
+        file_count = 0
+        
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                if not obj['Key'].endswith('/'):
+                    total_size += obj['Size']
+                    file_count += 1
+        
+        # 5TB limit
+        total_limit = 5 * 1024 * 1024 * 1024 * 1024  # 5TB in bytes
+        percentage = (total_size / total_limit) * 100 if total_limit > 0 else 0
+        
+        return {
+            'used': total_size,
+            'total': total_limit,
+            'percentage': percentage,
+            'files': file_count,
+            'project_total': total_size
+        }
+        
+    except Exception as e:
+        print(f"Error getting storage info: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving storage information")
+
+@app.options("/files/{file_key:path}/download")
+async def download_file_options(file_key: str):
+    """Handle CORS preflight for download endpoint"""
+    return Response(
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "Range, Content-Range, Content-Type, Authorization",
+            "Access-Control-Max-Age": "3600"
+        }
+    )
+
+@app.get("/public/video/{file_key:path}")
+async def public_video_stream(file_key: str):
+    """Stream video publicly - no auth required for HTML5 video element"""
+    try:
+        # Decode URL-encoded characters
+        from urllib.parse import unquote
+        decoded_key = unquote(file_key)
+        
+        print(f"Public video request: {decoded_key}")
+        
+        # Basic security - only allow user files
+        if not decoded_key.startswith("users/"):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Check if file exists
+        try:
+            head_response = s3_client.head_object(Bucket=STORAGE_BUCKET, Key=decoded_key)
+            content_length = head_response.get('ContentLength', 0)
+        except s3_client.exceptions.NoSuchKey:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        # Stream video from S3
+        def generate_stream():
+            try:
+                response = s3_client.get_object(Bucket=STORAGE_BUCKET, Key=decoded_key)
+                for chunk in response['Body'].iter_chunks(chunk_size=8192):
+                    yield chunk
+            except Exception as e:
+                print(f"Error streaming: {e}")
+                raise
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="video/mp4",
+            headers={
+                "Content-Length": str(content_length),
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                "Cache-Control": "public, max-age=3600"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in public video stream: {e}")
+        raise HTTPException(status_code=500, detail="Error streaming video")
+
+@app.get("/files/{file_key:path}/download")
+async def download_file(file_key: str):
+    """Stream user file from S3 with proper CORS and Content-Type headers"""
+    try:
+        # Para simplicidade, permitir acesso a arquivos do usuário padrão
+        user_id = 'user-sergio-sena'
+        
+        # Decode URL-encoded characters
+        from urllib.parse import unquote
+        decoded_key = unquote(file_key)
+        
+        print(f"Download request - Original: {file_key}")
+        print(f"Download request - Decoded: {decoded_key}")
+        
+        # Ensure user can only access their own files
+        if not decoded_key.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Check if file exists and get metadata
+        try:
+            head_response = s3_client.head_object(Bucket=STORAGE_BUCKET, Key=decoded_key)
+            s3_content_type = head_response.get('ContentType', 'application/octet-stream')
+            content_length = head_response.get('ContentLength', 0)
+        except s3_client.exceptions.NoSuchKey:
+            print(f"File not found: {decoded_key}")
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Determine correct Content-Type based on file extension
+        file_name = decoded_key.split('/')[-1].lower()
+        if file_name.endswith(('.mp4', '.m4v')):
+            content_type = 'video/mp4'
+        elif file_name.endswith('.avi'):
+            content_type = 'video/x-msvideo'
+        elif file_name.endswith('.mov'):
+            content_type = 'video/quicktime'
+        elif file_name.endswith('.wmv'):
+            content_type = 'video/x-ms-wmv'
+        elif file_name.endswith('.webm'):
+            content_type = 'video/webm'
+        elif file_name.endswith('.mkv'):
+            content_type = 'video/x-matroska'
+        elif file_name.endswith('.ts'):
+            content_type = 'video/mp2t'
+        else:
+            content_type = s3_content_type
+        
+        print(f"Content-Type: S3={s3_content_type}, Determined={content_type}")
+        
+        # Stream file from S3
+        from fastapi.responses import StreamingResponse
+        
+        def generate_stream():
+            try:
+                response = s3_client.get_object(Bucket=STORAGE_BUCKET, Key=decoded_key)
+                for chunk in response['Body'].iter_chunks(chunk_size=8192):
+                    yield chunk
+            except Exception as e:
+                print(f"Error streaming file: {e}")
+                raise
+        
+        # Headers CORS completos para vídeo
+        headers = {
+            "Content-Length": str(content_length),
+            "Accept-Ranges": "bytes",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "Range, Content-Range, Content-Type",
+            "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges",
+            "Cache-Control": "public, max-age=3600"
+        }
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type=content_type,
+            headers=headers
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error downloading file: {e}")
+        raise HTTPException(status_code=500, detail="Error downloading file")
+
+@app.get("/files/{file_key:path}/download-url")
+async def get_download_url(file_key: str, current_user: dict = Depends(verify_token)):
+    """Get presigned download URL for file with enhanced credentials"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        # Ensure user can only access their own files
+        if not file_key.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Try to get S3 credentials from Secrets Manager
+        try:
+            s3_creds_secret = get_secret('drive-online-s3-credentials')
+            if s3_creds_secret:
+                import json
+                creds = json.loads(s3_creds_secret)
+                enhanced_s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=creds['access_key'],
+                    aws_secret_access_key=creds['secret_key'],
+                    region_name=creds.get('region', 'us-east-1')
+                )
+            else:
+                enhanced_s3_client = s3_client
+        except:
+            enhanced_s3_client = s3_client
+        
+        # Generate presigned URL with short expiration for security
+        download_url = enhanced_s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': STORAGE_BUCKET, 'Key': file_key},
+            ExpiresIn=300  # 5 minutes
+        )
+        
+        return {'downloadUrl': download_url}
+        
+    except Exception as e:
+        print(f"Error getting download URL: {e}")
+        raise HTTPException(status_code=500, detail="Error getting download URL")
+
+@app.post("/files/upload-url")
+async def get_upload_url(request: dict, current_user: dict = Depends(verify_token)):
+    """Get presigned URL for file upload with duplicate check"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        file_name = request.get('fileName')
+        file_size = request.get('fileSize')
+        content_type = request.get('contentType')
+        
+        if not file_name:
+            raise HTTPException(status_code=400, detail="File name is required")
+        
+        # Check for duplicate files
+        prefix = f"users/{user_id}/"
+        response = s3_client.list_objects_v2(
+            Bucket=STORAGE_BUCKET,
+            Prefix=prefix
+        )
+        
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                existing_name = obj['Key'].replace(prefix, '')
+                # Remove timestamp prefix from existing files
+                if '-' in existing_name:
+                    existing_name_clean = '-'.join(existing_name.split('-')[1:])
+                else:
+                    existing_name_clean = existing_name
+                
+                if existing_name_clean == file_name:
+                    raise HTTPException(status_code=409, detail=f"Arquivo '{file_name}' já existe")
+        
+        # Generate unique file key
+        import time
+        timestamp = int(time.time())
+        file_key = f"users/{user_id}/{timestamp}-{file_name}"
+        
+        # Generate presigned URL for upload
+        upload_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': STORAGE_BUCKET,
+                'Key': file_key,
+                'ContentType': content_type
+            },
+            ExpiresIn=3600  # 1 hour
+        )
+        
+        # Auto-copy videos to public bucket after upload URL generation
+        is_video = is_video_file(file_name)
+        
+        return {
+            'uploadUrl': upload_url,
+            'fileId': file_key,
+            'isVideo': is_video
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating upload URL: {e}")
+        raise HTTPException(status_code=500, detail="Error generating upload URL")
+
+@app.get("/auth/temp-credentials")
+async def get_temp_credentials(current_user: dict = Depends(verify_token)):
+    """Get temporary AWS credentials for direct S3 access"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        # Política para acesso apenas aos arquivos do usuário
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "s3:GetObject",
+                    "Resource": f"arn:aws:s3:::{STORAGE_BUCKET}/users/{user_id}/*"
+                }
+            ]
+        }
+        
+        # Gerar credenciais temporárias
+        response = sts_client.assume_role(
+            RoleArn='arn:aws:iam::969430605054:role/video-streaming-lambda-role',
+            RoleSessionName=f'video-session-{user_id}',
+            Policy=json.dumps(policy),
+            DurationSeconds=3600  # 1 hora
+        )
+        
+        credentials = response['Credentials']
+        
+        return {
+            'AccessKeyId': credentials['AccessKeyId'],
+            'SecretAccessKey': credentials['SecretAccessKey'],
+            'SessionToken': credentials['SessionToken'],
+            'Expiration': credentials['Expiration'].isoformat(),
+            'Region': 'us-east-1',
+            'Bucket': STORAGE_BUCKET
+        }
+        
+    except Exception as e:
+        print(f"Error getting temp credentials: {e}")
+        raise HTTPException(status_code=500, detail="Error getting credentials")
+
+@app.post("/files/make-public")
+async def make_video_public(request: dict, current_user: dict = Depends(verify_token)):
+    """Copy video to public bucket manually"""
+    try:
+        file_id = request.get('fileId')
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        if not file_id.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not is_video_file(file_id):
+            raise HTTPException(status_code=400, detail="File is not a video")
+        
+        # Copy to public bucket
+        public_key = copy_to_public_bucket(file_id, user_id)
+        public_url = f"https://{PUBLIC_VIDEO_BUCKET}.s3.amazonaws.com/{public_key}"
+        
+        return {'publicUrl': public_url, 'publicKey': public_key}
+        
+    except Exception as e:
+        print(f"Error making video public: {e}")
+        raise HTTPException(status_code=500, detail="Error making video public")
+
+@app.post("/files/upload-complete")
+async def upload_complete(request: dict, current_user: dict = Depends(verify_token)):
+    """Notify that upload is complete and copy video if needed"""
+    try:
+        file_id = request.get('fileId')
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        if not file_id or not file_id.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=400, detail="Invalid file ID")
+        
+        # If it's a video, auto-copy to public bucket
+        if is_video_file(file_id):
+            try:
+                public_key = copy_to_public_bucket(file_id, user_id)
+                public_url = f"https://{PUBLIC_VIDEO_BUCKET}.s3.amazonaws.com/{public_key}"
+                
+                return {
+                    'message': 'Upload complete and video made public',
+                    'publicUrl': public_url,
+                    'isVideo': True
+                }
+            except Exception as e:
+                print(f"Failed to copy video to public bucket: {e}")
+                return {
+                    'message': 'Upload complete but failed to make video public',
+                    'isVideo': True,
+                    'error': str(e)
+                }
+        else:
+            return {
+                'message': 'Upload complete',
+                'isVideo': False
+            }
+        
+    except Exception as e:
+        print(f"Error in upload complete: {e}")
+        raise HTTPException(status_code=500, detail="Error processing upload completion")
+
+@app.delete("/files/{file_key:path}")
+async def delete_file(file_key: str, current_user: dict = Depends(verify_token)):
+    """Delete user file from S3 (private and public if video)"""
+    try:
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        # Ensure user can only delete their own files
+        if not file_key.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Delete from private bucket
+        s3_client.delete_object(Bucket=STORAGE_BUCKET, Key=file_key)
+        
+        # If it's a video, also delete from public bucket
+        if is_video_file(file_key):
+            try:
+                filename = file_key.split('/')[-1]
+                public_key = f"videos/{user_id}/{filename}"
+                s3_client.delete_object(Bucket=PUBLIC_VIDEO_BUCKET, Key=public_key)
+                print(f"Video also deleted from public bucket: {public_key}")
+            except Exception as e:
+                print(f"Failed to delete from public bucket: {e}")
+                # Don't fail the whole operation if public delete fails
+        
+        return {'message': 'File deleted successfully'}
+        
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+        raise HTTPException(status_code=500, detail="Error deleting file")
 
 # Lambda handler
 handler = Mangum(app)

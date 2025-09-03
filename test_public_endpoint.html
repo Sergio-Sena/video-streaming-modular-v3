@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Endpoint Público</title>
+</head>
+<body>
+    <h1>🎬 Teste Endpoint Público</h1>
+    
+    <h3>Novo Endpoint (Sem Autenticação):</h3>
+    <video controls width="600">
+        <source src="https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/public/video/users/user-sergio-sena/1756853751-Video automacao.mp4" type="video/mp4">
+        Seu navegador não suporta vídeo.
+    </video>
+    
+    <p>URL: <code>https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/public/video/users/user-sergio-sena/1756853751-Video automacao.mp4</code></p>
+    
+    <button onclick="testEndpoint()">Testar Endpoint</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testEndpoint() {
+            const url = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/public/video/users/user-sergio-sena/1756853751-Video automacao.mp4';
+            const result = document.getElementById('result');
+            
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                result.innerHTML = `<p>Status: ${response.status} ${response.statusText}</p>`;
+                
+                if (response.ok) {
+                    result.innerHTML += '<p style="color: green;">✅ Endpoint funcionando!</p>';
+                } else {
+                    result.innerHTML += '<p style="color: red;">❌ Endpoint com problema</p>';
+                }
+            } catch (error) {
+                result.innerHTML = `<p style="color: red;">❌ Erro: ${error.message}</p>`;
+            }
+        }
+        
+        // Testar automaticamente
+        setTimeout(testEndpoint, 2000);
+    </script>
+</body>
+</html>

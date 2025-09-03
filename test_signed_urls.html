@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Signed URLs - Drive Online</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        video { width: 100%; max-width: 600px; margin: 20px 0; border: 2px solid #0066cc; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #1a4a1a; color: #4a8a4a; }
+        .error { background: #4a1a1a; color: #8a4a4a; }
+        .info { background: #1a1a4a; color: #4a4a8a; }
+        button { padding: 10px 20px; margin: 5px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .url-display { background: #2a2a2a; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Teste Signed URLs (5 min)</h1>
+        
+        <div>
+            <button onclick="generateAndTest()">Gerar Nova Signed URL</button>
+            <button onclick="testCurrentUrl()">Testar URL Atual</button>
+            <button onclick="clearVideo()">Limpar Player</button>
+        </div>
+        
+        <div id="status" class="status info">Clique em "Gerar Nova Signed URL" para começar</div>
+        
+        <div id="urlDisplay" class="url-display" style="display: none;"></div>
+        
+        <video id="videoPlayer" controls style="display: none;">
+            Seu navegador não suporta vídeo HTML5.
+        </video>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        const FILE_KEY = 'users/user-sergio-sena/1756853751-Video automacao.mp4';
+        
+        let currentSignedUrl = '';
+        let urlGeneratedAt = null;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(div);
+            
+            // Manter apenas últimos 10 logs
+            while (logs.children.length > 10) {
+                logs.removeChild(logs.firstChild);
+            }
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function generateAndTest() {
+            try {
+                updateStatus('Gerando signed URL...', 'info');
+                
+                // Simular token (em produção, pegar do localStorage)
+                const token = localStorage.getItem('token') || prompt('Digite o token de autenticação:');
+                if (!token) {
+                    updateStatus('Token necessário para gerar URL', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/files/${encodeURIComponent(FILE_KEY)}/download-url`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                currentSignedUrl = data.downloadUrl;
+                urlGeneratedAt = new Date();
+                
+                // Adicionar timestamp para forçar renovação
+                const separator = currentSignedUrl.includes('?') ? '&' : '?';
+                const finalUrl = `${currentSignedUrl}${separator}t=${Date.now()}`;
+                
+                // Mostrar URL
+                const urlDisplay = document.getElementById('urlDisplay');
+                urlDisplay.textContent = finalUrl;
+                urlDisplay.style.display = 'block';
+                
+                updateStatus(`✅ Signed URL gerada (expira em 5 min)`, 'success');
+                log(`URL gerada: ${finalUrl.substring(0, 100)}...`, 'success');
+                
+                // Testar automaticamente
+                await testUrl(finalUrl);
+                
+            } catch (error) {
+                updateStatus(`❌ Erro: ${error.message}`, 'error');
+                log(`Erro ao gerar URL: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUrl(url = currentSignedUrl) {
+            if (!url) {
+                updateStatus('Nenhuma URL para testar', 'error');
+                return;
+            }
+            
+            try {
+                log('Testando URL com HEAD request...', 'info');
+                
+                const response = await fetch(url, { method: 'HEAD' });
+                
+                if (response.ok) {
+                    log(`✅ URL válida (${response.status})`, 'success');
+                    
+                    // Carregar no player
+                    const video = document.getElementById('videoPlayer');
+                    video.src = url;
+                    video.style.display = 'block';
+                    video.load();
+                    
+                    // Monitorar eventos do vídeo
+                    setupVideoEvents(video);
+                    
+                    updateStatus('✅ Vídeo carregado no player', 'success');
+                    
+                } else {
+                    log(`❌ URL inválida (${response.status})`, 'error');
+                    updateStatus(`❌ URL retornou ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no teste: ${error.message}`, 'error');
+                updateStatus(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        function setupVideoEvents(video) {
+            // Remover listeners anteriores
+            video.onloadstart = null;
+            video.onloadedmetadata = null;
+            video.oncanplay = null;
+            video.onerror = null;
+            
+            video.addEventListener('loadstart', () => {
+                log('📹 Vídeo: Iniciando carregamento', 'info');
+            });
+            
+            video.addEventListener('loadedmetadata', () => {
+                log(`📹 Vídeo: Metadados carregados (${Math.round(video.duration)}s)`, 'success');
+            });
+            
+            video.addEventListener('canplay', () => {
+                log('📹 Vídeo: Pronto para reproduzir!', 'success');
+                updateStatus('🎉 SUCESSO! Vídeo funcionando com signed URL', 'success');
+            });
+            
+            video.addEventListener('error', (e) => {
+                const error = e.target.error;
+                let errorMsg = 'Erro desconhecido';
+                
+                if (error) {
+                    switch(error.code) {
+                        case error.MEDIA_ERR_NETWORK:
+                            errorMsg = 'Erro de rede (possivelmente URL expirada)';
+                            break;
+                        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            errorMsg = 'URL não suportada ou inválida';
+                            break;
+                        default:
+                            errorMsg = `Código de erro: ${error.code}`;
+                    }
+                }
+                
+                log(`📹 Erro no vídeo: ${errorMsg}`, 'error');
+                updateStatus(`❌ Erro no player: ${errorMsg}`, 'error');
+            });
+        }
+        
+        function testCurrentUrl() {
+            if (!currentSignedUrl) {
+                updateStatus('Gere uma URL primeiro', 'error');
+                return;
+            }
+            
+            // Verificar se URL expirou (5 minutos)
+            if (urlGeneratedAt) {
+                const elapsed = (Date.now() - urlGeneratedAt.getTime()) / 1000 / 60;
+                if (elapsed > 5) {
+                    updateStatus('⚠️ URL provavelmente expirada (>5 min)', 'error');
+                    log(`URL gerada há ${elapsed.toFixed(1)} minutos`, 'error');
+                }
+            }
+            
+            testUrl(currentSignedUrl);
+        }
+        
+        function clearVideo() {
+            const video = document.getElementById('videoPlayer');
+            video.src = '';
+            video.style.display = 'none';
+            
+            const urlDisplay = document.getElementById('urlDisplay');
+            urlDisplay.style.display = 'none';
+            
+            currentSignedUrl = '';
+            urlGeneratedAt = null;
+            
+            updateStatus('Player limpo', 'info');
+            log('Player e URLs limpos', 'info');
+        }
+        
+        // Verificar expiração a cada minuto
+        setInterval(() => {
+            if (urlGeneratedAt) {
+                const elapsed = (Date.now() - urlGeneratedAt.getTime()) / 1000 / 60;
+                if (elapsed > 5 && currentSignedUrl) {
+                    log('⚠️ URL expirou (5 minutos)', 'error');
+                    updateStatus('URL expirada - gere uma nova', 'error');
+                }
+            }
+        }, 60000);
+    </script>
+</body>
+</html>

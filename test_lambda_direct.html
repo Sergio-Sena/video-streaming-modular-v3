@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Lambda Direto</title>
+</head>
+<body>
+    <h1>🧪 Teste Lambda Direto</h1>
+    
+    <div>
+        <button onclick="testHealth()">Testar /health</button>
+        <button onclick="testRoot()">Testar /</button>
+        <button onclick="testFiles()">Testar /files</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        
+        async function testEndpoint(path, name) {
+            const results = document.getElementById('results');
+            
+            try {
+                const response = await fetch(`${API_BASE}${path}`);
+                const text = await response.text();
+                
+                results.innerHTML += `
+                    <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                        <strong>${name}</strong><br>
+                        Status: ${response.status}<br>
+                        Response: ${text.substring(0, 200)}...
+                    </div>
+                `;
+                
+            } catch (error) {
+                results.innerHTML += `
+                    <div style="margin: 10px 0; padding: 10px; border: 1px solid red;">
+                        <strong>${name}</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function testHealth() {
+            testEndpoint('/health', 'Health Check');
+        }
+        
+        function testRoot() {
+            testEndpoint('/', 'Root');
+        }
+        
+        function testFiles() {
+            testEndpoint('/files', 'Files (sem auth)');
+        }
+    </script>
+</body>
+</html>

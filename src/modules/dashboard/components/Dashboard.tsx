@@ -3,12 +3,14 @@ import { authService } from '../../auth/services/authService'
 import { VideoList } from '../../player/components/VideoList'
 import { FileUpload } from '../../files/components/FileUpload/FileUpload'
 import { StorageStats } from '../../files/components/StorageStats'
+import { FileList } from '../../files/components/FileList'
 import { VideoFile } from '../../player/services/playerService'
+import { apiClient } from '../../../shared/services/apiClient'
 
 export const Dashboard = () => {
   const [user] = useState(() => authService.getUser())
   const [videos, setVideos] = useState<VideoFile[]>([])
-  const [activeTab, setActiveTab] = useState<'videos' | 'upload' | 'storage'>('videos')
+  const [activeTab, setActiveTab] = useState<'files' | 'upload' | 'storage'>('files')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogout = async () => {
@@ -19,33 +21,98 @@ export const Dashboard = () => {
   const loadVideos = async () => {
     setIsLoading(true)
     try {
-      // Simular carregamento de vídeos - integrar com API real
-      const mockVideos: VideoFile[] = [
-        {
-          id: '1',
-          name: 'video-exemplo.mp4',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      const response = await apiClient.get('/files')
+      
+      if (response.ok) {
+        const data = await response.json()
+        const videoFiles = (data.files || []).filter((file: any) => {
+          const isVideoType = file.type?.startsWith('video/')
+          const isVideoExtension = file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv)$/i)
+          const hasVideoInName = file.name?.toLowerCase().includes('video')
+          
+          console.log('Arquivo:', file.name, 'Tipo:', file.type, 'É vídeo:', isVideoType || isVideoExtension || hasVideoInName)
+          
+          return isVideoType || isVideoExtension || hasVideoInName
+        }).map((file: any) => ({
+          id: file.id || file.name,
+          name: file.name,
+          url: `https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files/${file.id}/download`,
+          type: file.type || 'video/mp4',
+          size: file.size || 0,
+          lastModified: file.lastModified || new Date().toISOString()
+        }))
+        
+        console.log('Total de arquivos:', data.files?.length)
+        console.log('Vídeos filtrados:', videoFiles.length)
+        // Se não encontrou vídeos com filtro, mostrar todos os arquivos de mídia
+        if (videoFiles.length === 0) {
+          const allMediaFiles = (data.files || []).filter((file: any) => {
+            const isMedia = file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv|mp3|wav|m4a|jpg|jpeg|png|gif|pdf)$/i)
+            return isMedia
+          }).map((file: any) => ({
+            id: file.id || file.name,
+            name: file.name,
+            url: `https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files/${file.id}/download`,
+            type: file.type || 'video/mp4',
+            size: file.size || 0,
+            lastModified: file.lastModified || new Date().toISOString()
+          }))
+          
+          console.log('Mostrando todos os arquivos de mídia:', allMediaFiles.length)
+          setVideos(allMediaFiles)
+        } else {
+          setVideos(videoFiles)
+        }
+        
+        // Sempre adicionar vídeo de exemplo no início
+        const sampleVideo = {
+          id: 'sample-video',
+          name: 'Vídeo de Exemplo (Local)',
+          url: '/sample-video.mp4',
           type: 'video/mp4',
-          size: 15728640,
+          size: 299762481,
           lastModified: new Date().toISOString()
         }
-      ]
-      setVideos(mockVideos)
+        setVideos(prev => [sampleVideo, ...prev])
+      } else {
+        console.warn('Erro ao carregar vídeos, usando fallback')
+        setVideos([])
+      }
     } catch (error) {
       console.error('Erro ao carregar vídeos:', error)
+      setVideos([])
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    loadVideos()
+    // Aguardar um pouco antes de verificar autenticação
+    const checkAndLoad = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const token = authService.getToken()
+      const user = authService.getUser()
+      
+      console.log('Dashboard useEffect - Token:', token ? 'EXISTS' : 'NULL')
+      console.log('Dashboard useEffect - User:', user ? 'EXISTS' : 'NULL')
+      console.log('Dashboard useEffect - isAuthenticated:', authService.isAuthenticated())
+      
+      if (authService.isAuthenticated()) {
+        loadVideos()
+      } else {
+        console.warn('Usuário não autenticado, redirecionando...')
+        window.location.href = '/login'
+      }
+    }
+    
+    checkAndLoad()
   }, [])
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'videos':
-        return <VideoList videos={videos} onRefresh={loadVideos} />
+      case 'files':
+        return <FileList onRefresh={loadVideos} />
       case 'upload':
         return <FileUpload onUploadComplete={loadVideos} />
       case 'storage':
@@ -90,7 +157,7 @@ export const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             {[
-              { id: 'videos', label: '🎥 Vídeos', count: videos.length },
+              { id: 'files', label: '📁 Arquivos' },
               { id: 'upload', label: '📤 Upload' },
               { id: 'storage', label: '💾 Armazenamento' }
             ].map((tab) => (

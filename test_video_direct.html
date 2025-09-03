@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Direto de Vídeo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        video { width: 100%; max-width: 600px; margin: 20px 0; }
+        .test-url { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; background: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Teste Direto de Vídeo - Drive Online</h1>
+        
+        <div class="test-url">
+            <h3>URLs para Teste:</h3>
+            <div id="urls"></div>
+        </div>
+        
+        <button onclick="testAllUrls()">Testar Todas as URLs</button>
+        <button onclick="generatePresigned()">Gerar Presigned URL</button>
+        
+        <div id="results"></div>
+        
+        <h3>Player de Teste:</h3>
+        <video id="testVideo" controls>
+            Seu navegador não suporta vídeo HTML5.
+        </video>
+        
+        <div>
+            <button onclick="loadVideo(0)">Carregar CloudFront</button>
+            <button onclick="loadVideo(1)">Carregar S3 Direto</button>
+            <button onclick="loadVideo(2)">Carregar Presigned</button>
+        </div>
+    </div>
+
+    <script>
+        const FILE_KEY = 'users/user-sergio-sena/1756853751-Video automacao.mp4';
+        
+        const TEST_URLS = [
+            `https://d2gikqc9umroy8.cloudfront.net/${FILE_KEY}`,
+            `https://drive-online-storage.s3.amazonaws.com/${FILE_KEY}`,
+            '' // Presigned URL será preenchida
+        ];
+        
+        let currentPresignedUrl = '';
+        
+        function displayUrls() {
+            const urlsDiv = document.getElementById('urls');
+            urlsDiv.innerHTML = TEST_URLS.map((url, i) => 
+                `<div><strong>${i + 1}.</strong> ${url || 'Presigned URL (será gerada)'}</div>`
+            ).join('');
+        }
+        
+        async function testAllUrls() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Resultados dos Testes:</h3>';
+            
+            for (let i = 0; i < TEST_URLS.length; i++) {
+                const url = TEST_URLS[i] || currentPresignedUrl;
+                if (!url) continue;
+                
+                const result = document.createElement('div');
+                result.className = 'result';
+                result.innerHTML = `<strong>Testando URL ${i + 1}:</strong> ${url.substring(0, 80)}...`;
+                resultsDiv.appendChild(result);
+                
+                try {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    result.innerHTML += `<br>Status: ${response.status} ${response.statusText}`;
+                    
+                    if (response.ok) {
+                        result.style.background = '#1a4a1a';
+                        result.innerHTML += '<br>✅ FUNCIONANDO!';
+                    } else {
+                        result.style.background = '#4a1a1a';
+                        result.innerHTML += '<br>❌ Não funcionando';
+                    }
+                } catch (error) {
+                    result.style.background = '#4a1a1a';
+                    result.innerHTML += `<br>❌ Erro: ${error.message}`;
+                }
+            }
+        }
+        
+        async function generatePresigned() {
+            try {
+                const token = localStorage.getItem('token') || prompt('Digite o token de autenticação:');
+                if (!token) return;
+                
+                const response = await fetch(`https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files/${encodeURIComponent(FILE_KEY)}/download-url`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentPresignedUrl = data.downloadUrl;
+                    TEST_URLS[2] = currentPresignedUrl;
+                    displayUrls();
+                    alert('Presigned URL gerada com sucesso!');
+                } else {
+                    alert(`Erro ao gerar presigned URL: ${response.status}`);
+                }
+            } catch (error) {
+                alert(`Erro: ${error.message}`);
+            }
+        }
+        
+        function loadVideo(urlIndex) {
+            const video = document.getElementById('testVideo');
+            const url = TEST_URLS[urlIndex] || currentPresignedUrl;
+            
+            if (!url) {
+                alert('URL não disponível. Gere a presigned URL primeiro.');
+                return;
+            }
+            
+            video.src = url;
+            video.load();
+            
+            video.addEventListener('loadstart', () => console.log('Video: loadstart'));
+            video.addEventListener('loadedmetadata', () => console.log('Video: loadedmetadata'));
+            video.addEventListener('canplay', () => console.log('Video: canplay'));
+            video.addEventListener('error', (e) => console.error('Video error:', e.target.error));
+            
+            console.log(`Carregando vídeo da URL ${urlIndex + 1}:`, url);
+        }
+        
+        // Inicializar
+        window.addEventListener('load', () => {
+            displayUrls();
+        });
+    </script>
+</body>
+</html>

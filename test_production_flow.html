@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Fluxo Produção</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; }
+        .pending { background: #fff3cd; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Teste Fluxo Completo - Produção</h1>
+    
+    <div class="step pending" id="step1">
+        <h3>1. Upload de Vídeo</h3>
+        <p>Fazer upload de um vídeo novo</p>
+        <input type="file" id="videoFile" accept="video/*">
+        <button onclick="testUpload()">Upload Teste</button>
+        <div id="uploadResult"></div>
+    </div>
+    
+    <div class="step pending" id="step2">
+        <h3>2. Cópia Automática</h3>
+        <p>Verificar se vídeo foi copiado para bucket público</p>
+        <button onclick="checkAutoCopy()">Verificar Cópia</button>
+        <div id="copyResult"></div>
+    </div>
+    
+    <div class="step pending" id="step3">
+        <h3>3. Listagem</h3>
+        <p>Verificar se vídeo aparece na listagem</p>
+        <button onclick="testListing()">Testar Listagem</button>
+        <div id="listResult"></div>
+    </div>
+    
+    <div class="step pending" id="step4">
+        <h3>4. Reprodução</h3>
+        <p>Testar reprodução do vídeo</p>
+        <button onclick="testPlayback()">Testar Player</button>
+        <video id="testVideo" controls style="width: 100%; max-width: 400px; display: none;"></video>
+        <div id="playResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        let uploadedFileId = '';
+        let uploadedFileName = '';
+        
+        async function testUpload() {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Selecione um arquivo de vídeo');
+                return;
+            }
+            
+            const result = document.getElementById('uploadResult');
+            result.innerHTML = 'Fazendo upload...';
+            
+            try {
+                // Simular token
+                const token = localStorage.getItem('token') || prompt('Digite o token:');
+                
+                // 1. Obter URL de upload
+                const uploadResponse = await fetch(`${API_BASE}/files/upload-url`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        fileSize: file.size,
+                        contentType: file.type
+                    })
+                });
+                
+                const { uploadUrl, fileId } = await uploadResponse.json();
+                uploadedFileId = fileId;
+                uploadedFileName = file.name;
+                
+                // 2. Upload do arquivo
+                const uploadFileResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+                
+                if (uploadFileResponse.ok) {
+                    // 3. Confirmar upload (trigger cópia automática)
+                    const confirmResponse = await fetch(`${API_BASE}/files/upload-complete`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fileId })
+                    });
+                    
+                    const confirmData = await confirmResponse.json();
+                    
+                    result.innerHTML = `✅ Upload completo! FileId: ${fileId}<br>Cópia automática: ${confirmData.isVideo ? 'SIM' : 'NÃO'}`;
+                    document.getElementById('step1').className = 'step success';
+                    
+                } else {
+                    throw new Error('Falha no upload');
+                }
+                
+            } catch (error) {
+                result.innerHTML = `❌ Erro: ${error.message}`;
+                document.getElementById('step1').className = 'step error';
+            }
+        }
+        
+        async function checkAutoCopy() {
+            if (!uploadedFileId) {
+                alert('Faça upload primeiro');
+                return;
+            }
+            
+            const result = document.getElementById('copyResult');
+            result.innerHTML = 'Verificando...';
+            
+            try {
+                // Verificar se existe no bucket público
+                const fileName = uploadedFileName;
+                const publicUrl = `https://automacao-video.s3.amazonaws.com/videos/user-sergio-sena/${fileName}`;
+                
+                const response = await fetch(publicUrl, { method: 'HEAD' });
+                
+                if (response.ok) {
+                    result.innerHTML = `✅ Vídeo copiado para bucket público!<br>URL: ${publicUrl}`;
+                    document.getElementById('step2').className = 'step success';
+                } else {
+                    result.innerHTML = `❌ Vídeo não encontrado no bucket público (${response.status})`;
+                    document.getElementById('step2').className = 'step error';
+                }
+                
+            } catch (error) {
+                result.innerHTML = `❌ Erro: ${error.message}`;
+                document.getElementById('step2').className = 'step error';
+            }
+        }
+        
+        async function testListing() {
+            const result = document.getElementById('listResult');
+            result.innerHTML = 'Testando listagem...';
+            
+            try {
+                const token = localStorage.getItem('token') || prompt('Digite o token:');
+                
+                const response = await fetch(`${API_BASE}/files`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (uploadedFileId) {
+                    const found = data.files.find(f => f.id === uploadedFileId);
+                    if (found) {
+                        result.innerHTML = `✅ Vídeo encontrado na listagem!<br>Nome: ${found.name}`;
+                        document.getElementById('step3').className = 'step success';
+                    } else {
+                        result.innerHTML = `❌ Vídeo não encontrado na listagem`;
+                        document.getElementById('step3').className = 'step error';
+                    }
+                } else {
+                    result.innerHTML = `✅ Listagem funcionando (${data.files.length} arquivos)`;
+                    document.getElementById('step3').className = 'step success';
+                }
+                
+            } catch (error) {
+                result.innerHTML = `❌ Erro: ${error.message}`;
+                document.getElementById('step3').className = 'step error';
+            }
+        }
+        
+        async function testPlayback() {
+            if (!uploadedFileName) {
+                alert('Faça upload primeiro');
+                return;
+            }
+            
+            const result = document.getElementById('playResult');
+            const video = document.getElementById('testVideo');
+            
+            result.innerHTML = 'Testando reprodução...';
+            
+            try {
+                // URL pública do vídeo
+                const publicUrl = `https://automacao-video.s3.amazonaws.com/videos/user-sergio-sena/${uploadedFileName}`;
+                
+                video.src = publicUrl;
+                video.style.display = 'block';
+                video.load();
+                
+                video.addEventListener('loadedmetadata', () => {
+                    result.innerHTML = `✅ Vídeo carregado e pronto para reproduzir!<br>Duração: ${Math.round(video.duration)}s`;
+                    document.getElementById('step4').className = 'step success';
+                });
+                
+                video.addEventListener('error', (e) => {
+                    result.innerHTML = `❌ Erro na reprodução: ${e.target.error?.message || 'Desconhecido'}`;
+                    document.getElementById('step4').className = 'step error';
+                });
+                
+            } catch (error) {
+                result.innerHTML = `❌ Erro: ${error.message}`;
+                document.getElementById('step4').className = 'step error';
+            }
+        }
+    </script>
+</body>
+</html>

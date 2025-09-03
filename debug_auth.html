@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth Flow</title>
+</head>
+<body>
+    <h1>Debug Autenticação</h1>
+    <div id="debug"></div>
+    
+    <script>
+        function debug(msg) {
+            document.getElementById('debug').innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+        
+        // Verificar localStorage
+        debug('=== VERIFICANDO LOCALSTORAGE ===');
+        debug('auth_token: ' + localStorage.getItem('auth_token'));
+        debug('auth_user: ' + localStorage.getItem('auth_user'));
+        debug('token: ' + localStorage.getItem('token'));
+        
+        // Testar login
+        async function testLogin() {
+            debug('=== TESTANDO LOGIN ===');
+            try {
+                const response = await fetch('https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'senanetworker@gmail.com',
+                        password: 'sergiosena'
+                    })
+                });
+                
+                debug('Response status: ' + response.status);
+                const data = await response.json();
+                debug('Response data: ' + JSON.stringify(data));
+                
+                if (data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_user', JSON.stringify(data.user));
+                    debug('Token salvo: ' + data.token);
+                }
+                
+            } catch (error) {
+                debug('Erro no login: ' + error.message);
+            }
+        }
+        
+        // Testar requisição autenticada
+        async function testAuthRequest() {
+            debug('=== TESTANDO REQUISIÇÃO AUTENTICADA ===');
+            const token = localStorage.getItem('auth_token');
+            debug('Token usado: ' + token);
+            
+            try {
+                const response = await fetch('https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                debug('Files response status: ' + response.status);
+                const data = await response.json();
+                debug('Files response: ' + JSON.stringify(data));
+                
+            } catch (error) {
+                debug('Erro na requisição: ' + error.message);
+            }
+        }
+        
+        // Executar testes
+        testLogin().then(() => {
+            setTimeout(testAuthRequest, 1000);
+        });
+    </script>
+</body>
+</html>

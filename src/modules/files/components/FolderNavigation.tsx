@@ -1,5 +1,5 @@
 interface SimpleFolderTabsProps {
-  folders: Array<{name: string, fileCount: number}>
+  folders: Array<{name: string, count: number}>
   currentFolder: string
   onFolderChange: (folder: string) => void
 }
@@ -9,7 +9,7 @@ export const SimpleFolderTabs = ({
   currentFolder, 
   onFolderChange 
 }: SimpleFolderTabsProps) => {
-  const allFolders = [{name: 'Todos', fileCount: 0}, ...folders]
+  const allFolders = folders.find(f => f.name === 'Todos') ? folders : [{name: 'Todos', count: 0}, ...folders]
   
   return (
     <div className="mb-6">
@@ -28,8 +28,8 @@ export const SimpleFolderTabs = ({
              folder.name === 'Vídeos' ? '🎥' : 
              folder.name === 'Documentos' ? '📄' : 
              folder.name === 'Outros' ? '📁' : '📂'} {folder.name}
-            {folder.fileCount > 0 && (
-              <span className="ml-2 text-xs opacity-75">({folder.fileCount})</span>
+            {folder.count > 0 && (
+              <span className="ml-2 text-xs opacity-75">({folder.count})</span>
             )}
           </button>
         ))}

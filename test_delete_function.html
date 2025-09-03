@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Função Delete</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 400px; }
+    </style>
+</head>
+<body>
+    <h1>🗑️ Teste Função Delete</h1>
+    
+    <div class="test">
+        <h3>1. Listar Arquivos</h3>
+        <button onclick="listFiles()">Listar Arquivos</button>
+        <div id="filesList"></div>
+    </div>
+    
+    <div class="test">
+        <h3>2. Deletar Arquivo</h3>
+        <input type="text" id="fileIdInput" placeholder="Cole o ID do arquivo aqui">
+        <button onclick="deleteFile()">Deletar Arquivo</button>
+        <div id="deleteResult"></div>
+    </div>
+    
+    <div class="test">
+        <h3>3. Verificar Buckets</h3>
+        <button onclick="checkBuckets()">Verificar se foi removido dos buckets</button>
+        <div id="bucketsResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod';
+        let selectedFileId = '';
+        let selectedFileName = '';
+        
+        async function listFiles() {
+            const result = document.getElementById('filesList');
+            result.innerHTML = 'Carregando...';
+            
+            try {
+                const token = localStorage.getItem('token') || prompt('Digite o token:');
+                
+                const response = await fetch(`${API_BASE}/files`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.files && data.files.length > 0) {
+                    let html = '<h4>Arquivos encontrados:</h4><ul>';
+                    data.files.forEach(file => {
+                        const isVideo = file.type.startsWith('video/');
+                        html += `
+                            <li style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                                <strong>${file.name}</strong> ${isVideo ? '🎬' : '📄'}<br>
+                                <small>ID: ${file.id}</small><br>
+                                <small>Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB</small><br>
+                                <button onclick="selectFile('${file.id}', '${file.name}')">Selecionar para Delete</button>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    result.innerHTML = html;
+                } else {
+                    result.innerHTML = 'Nenhum arquivo encontrado';
+                }
+                
+            } catch (error) {
+                result.innerHTML = `Erro: ${error.message}`;
+            }
+        }
+        
+        function selectFile(fileId, fileName) {
+            selectedFileId = fileId;
+            selectedFileName = fileName;
+            document.getElementById('fileIdInput').value = fileId;
+            alert(`Arquivo selecionado: ${fileName}`);
+        }
+        
+        async function deleteFile() {
+            const fileId = document.getElementById('fileIdInput').value || selectedFileId;
+            const result = document.getElementById('deleteResult');
+            
+            if (!fileId) {
+                alert('Digite ou selecione um ID de arquivo');
+                return;
+            }
+            
+            result.innerHTML = 'Deletando...';
+            
+            try {
+                const token = localStorage.getItem('token') || prompt('Digite o token:');
+                
+                const response = await fetch(`${API_BASE}/files/${encodeURIComponent(fileId)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `✅ ${data.message}`;
+                    result.className = 'test success';
+                    
+                    // Atualizar lista
+                    setTimeout(listFiles, 1000);
+                } else {
+                    const errorText = await response.text();
+                    result.innerHTML = `❌ Erro ${response.status}: ${errorText}`;
+                    result.className = 'test error';
+                }
+                
+            } catch (error) {
+                result.innerHTML = `❌ Erro: ${error.message}`;
+                result.className = 'test error';
+            }
+        }
+        
+        async function checkBuckets() {
+            const fileId = document.getElementById('fileIdInput').value || selectedFileId;
+            const result = document.getElementById('bucketsResult');
+            
+            if (!fileId) {
+                alert('Digite um ID de arquivo primeiro');
+                return;
+            }
+            
+            result.innerHTML = 'Verificando buckets...';
+            
+            try {
+                // Verificar bucket privado
+                const privateUrl = `https://drive-online-storage.s3.amazonaws.com/${fileId}`;
+                const privateResponse = await fetch(privateUrl, { method: 'HEAD' });
+                
+                // Verificar bucket público (se for vídeo)
+                const fileName = fileId.split('/').pop();
+                const publicUrl = `https://automacao-video.s3.amazonaws.com/videos/user-sergio-sena/${fileName}`;
+                const publicResponse = await fetch(publicUrl, { method: 'HEAD' });
+                
+                let html = '<h4>Status dos Buckets:</h4>';
+                html += `<p><strong>Bucket Privado:</strong> ${privateResponse.status === 404 ? '✅ Removido' : '❌ Ainda existe'}</p>`;
+                html += `<p><strong>Bucket Público:</strong> ${publicResponse.status === 404 ? '✅ Removido' : '❌ Ainda existe'}</p>`;
+                
+                result.innerHTML = html;
+                
+            } catch (error) {
+                result.innerHTML = `Erro: ${error.message}`;
+            }
+        }
+        
+        // Auto-listar ao carregar
+        window.addEventListener('load', () => {
+            setTimeout(listFiles, 1000);
+        });
+    </script>
+</body>
+</html>

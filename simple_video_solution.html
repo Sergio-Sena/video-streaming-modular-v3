@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solução Simples - Vídeos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .solution { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        video { width: 100%; max-width: 600px; margin: 10px 0; }
+        .working { background: #d4edda; }
+        .failed { background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Solução Simples para Vídeos</h1>
+    
+    <div class="solution">
+        <h3>Problema Identificado:</h3>
+        <p>❌ Presigned URLs retornam 403 (sem permissão)</p>
+        <p>❌ Lambda endpoint retorna 404 (configuração incorreta)</p>
+        <p>❌ CloudFront/S3 direto sem permissões públicas</p>
+    </div>
+    
+    <div class="solution">
+        <h3>✅ Solução Imediata: Usar Proxy CORS</h3>
+        <p>Usar serviço proxy público para contornar CORS:</p>
+        
+        <video id="proxyVideo" controls>
+            Carregando...
+        </video>
+        
+        <button onclick="loadWithProxy()">Carregar com Proxy</button>
+        <div id="proxyStatus"></div>
+    </div>
+    
+    <div class="solution">
+        <h3>📋 Para Implementar no React:</h3>
+        <pre>
+// No FileList.tsx, substituir:
+videoUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(presignedUrl)}`
+
+// Ou usar:
+videoUrl = `https://corsproxy.io/?${encodeURIComponent(presignedUrl)}`
+        </pre>
+    </div>
+
+    <script>
+        async function loadWithProxy() {
+            const video = document.getElementById('proxyVideo');
+            const status = document.getElementById('proxyStatus');
+            
+            try {
+                status.textContent = 'Gerando presigned URL...';
+                
+                // Simular presigned URL (substitua pela real)
+                const presignedUrl = 'https://drive-online-storage.s3.amazonaws.com/users/user-sergio-sena/1756853751-Video%20automacao.mp4?AWSAccessKeyId=AKIA6DNURDT7MO5EXHLQ&Signature=5LE%2F2C%2BxxxWGdn01khamyWDQOb8%3D&Expires=1756867765';
+                
+                // Usar proxy CORS
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(presignedUrl)}`;
+                
+                status.textContent = 'Carregando com proxy...';
+                video.src = proxyUrl;
+                video.load();
+                
+                video.addEventListener('loadedmetadata', () => {
+                    status.textContent = '✅ Vídeo carregado com sucesso!';
+                    status.style.color = 'green';
+                });
+                
+                video.addEventListener('error', (e) => {
+                    status.textContent = `❌ Erro: ${e.target.error?.message || 'Desconhecido'}`;
+                    status.style.color = 'red';
+                });
+                
+            } catch (error) {
+                status.textContent = `❌ Erro: ${error.message}`;
+                status.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>

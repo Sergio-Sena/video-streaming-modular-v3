@@ -92,7 +92,7 @@ export const FileList = ({ onRefresh }: FileListProps) => {
   const handleDelete = (fileName: string) => {
     if (!confirm('Tem certeza que deseja deletar este arquivo?')) return
     
-    console.log('FileList - Emitindo evento de delete:', fileName)
+    console.log('FileList - Deletando arquivo:', fileName)
     eventBus.emit('storage:delete-file', { fileName })
   }
 

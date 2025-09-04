@@ -6,9 +6,9 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4">
-            <span className="neon-text neon-glow">Drive</span>{' '}
-            <span className="text-white">Online</span>
+          <h1 className="text-5xl font-bold mb-4 flex items-center justify-center gap-3">
+            <span className="text-4xl">🎬</span>
+            <span className="neon-text neon-glow">Mediaflow</span>
           </h1>
           <p className="text-gray-300 text-lg">
             Acesse seus arquivos de qualquer lugar
@@ -23,7 +23,7 @@ const LoginPage = () => {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-400">
-          <p>© 2025 Drive Online. Todos os direitos reservados.</p>
+          <p>© 2025 Mediaflow. Sistema modular de mídia.</p>
         </div>
       </div>
     </div>

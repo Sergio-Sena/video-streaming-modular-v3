@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DropZone } from './DropZone'
 import { ProgressBar } from './ProgressBar'
 import { uploadService, UploadFile } from '../../services/uploadService'
+import { eventBus } from '../../../../core/engine/EventBus'
 
 interface FileUploadProps {
   onUploadComplete?: () => void
@@ -11,6 +12,44 @@ interface FileUploadProps {
 export const FileUpload = ({ onUploadComplete, onClose }: FileUploadProps) => {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
+
+  useEffect(() => {
+    // Escutar eventos do UploadModule
+    eventBus.on('upload:progress', handleUploadProgress)
+    eventBus.on('upload:complete', handleUploadComplete)
+    eventBus.on('upload:error', handleUploadError)
+    
+    return () => {
+      eventBus.off('upload:progress', handleUploadProgress)
+      eventBus.off('upload:complete', handleUploadComplete)
+      eventBus.off('upload:error', handleUploadError)
+    }
+  }, [])
+
+  const handleUploadProgress = (data: any) => {
+    setUploadFiles(prev => 
+      prev.map(f => 
+        f.name === data.fileName 
+          ? { ...f, progress: data.progress, status: data.status }
+          : f
+      )
+    )
+  }
+
+  const handleUploadComplete = (data: any) => {
+    console.log('FileUpload - Upload completed via EventBus:', data.fileName)
+    onUploadComplete?.()
+  }
+
+  const handleUploadError = (data: any) => {
+    setUploadFiles(prev => 
+      prev.map(f => 
+        f.name === data.fileName 
+          ? { ...f, status: 'error', error: data.error }
+          : f
+      )
+    )
+  }
 
   const handleFilesSelected = async (files: File[]) => {
     const newUploadFiles: UploadFile[] = []
@@ -72,10 +111,7 @@ export const FileUpload = ({ onUploadComplete, onClose }: FileUploadProps) => {
           }
         )
 
-        // Confirmar upload e copiar vídeo se necessário
-        await uploadService.confirmUpload(fileId)
-
-        // Marcar como completo
+        // Marcar como completo (sem confirmUpload)
         setUploadFiles(prev => 
           prev.map(f => 
             f.id === uploadFile.id 
@@ -86,6 +122,15 @@ export const FileUpload = ({ onUploadComplete, onClose }: FileUploadProps) => {
 
         // Refresh imediato após cada arquivo
         onUploadComplete?.()
+        
+        // Auto-fechar após 2 segundos se todos concluídos
+        setTimeout(() => {
+          const allCompleted = uploadFiles.every(f => f.status === 'completed' || f.status === 'error')
+          if (allCompleted) {
+            setUploadFiles([])
+            console.log('Upload concluído - Limpando lista automaticamente')
+          }
+        }, 2000)
 
       } catch (error) {
         console.error('Upload error:', error)
@@ -106,6 +151,12 @@ export const FileUpload = ({ onUploadComplete, onClose }: FileUploadProps) => {
 
     setIsUploading(false)
     onUploadComplete?.()
+    
+    // Forçar atualização da lista após todos os uploads
+    setTimeout(() => {
+      console.log('Forçando refresh da lista após uploads')
+      onUploadComplete?.()
+    }, 1000)
   }
 
   const removeFile = (fileId: string) => {

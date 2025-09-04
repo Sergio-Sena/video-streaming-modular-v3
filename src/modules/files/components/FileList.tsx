@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import { fileService } from '../services/fileService'
 import { folderService, SimpleFolder } from '../services/folderService'
+import { conversionService } from '../services/conversionService'
 import { SimpleFolderTabs } from './FolderNavigation'
+import { MediaPlayer } from '../../media-player/components/MediaPlayer'
+import { appConfig } from '../../../core/config/AppConfig'
+import { eventBus } from '../../../core/engine/EventBus'
+import { cleanupService } from '../services/cleanupService'
 
 // Componente para preview de imagem com presigned URL
-const ImagePreview = ({ fileId, fileName }: { fileId: string, fileName: string }) => {
+const ImagePreview = ({ fileName }: { fileName: string }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [showFallback, setShowFallback] = useState(false)
 
   useEffect(() => {
     const loadImageUrl = async () => {
       try {
-        const url = await fileService.getDownloadUrl(fileId)
+        const url = await fileService.getDownloadUrl(fileName)
         setImageUrl(url)
       } catch (error) {
         console.error('Error loading image preview:', error)
@@ -19,7 +24,7 @@ const ImagePreview = ({ fileId, fileName }: { fileId: string, fileName: string }
       }
     }
     loadImageUrl()
-  }, [fileId])
+  }, [fileName])
 
   if (showFallback || !imageUrl) {
     return <div className="text-2xl">🖼️</div>
@@ -47,36 +52,15 @@ export const FileList = ({ onRefresh }: FileListProps) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showPlayer, setShowPlayer] = useState(false)
-  const [currentVideo, setCurrentVideo] = useState<any>(null)
+  const [selectedFile, setSelectedFile] = useState<any | null>(null)
+  const [playerPosition, setPlayerPosition] = useState<{ top: number; left: number } | null>(null)
 
-  const loadFiles = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const fileList = await fileService.getFiles()
-      
-      // Adicionar vídeo de exemplo que sempre funciona
-      const exampleVideo = {
-        id: 'sample-video',
-        name: '🎬 Vídeo de Exemplo (Funciona)',
-        size: 1024000,
-        type: 'video/mp4',
-        url: '/sample-video.mp4',
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString()
-      }
-      
-      const allFilesWithExample = [exampleVideo, ...fileList]
-      
-      setAllFiles(allFilesWithExample)
-      setFolders(folderService.extractFoldersFromFiles(allFilesWithExample))
-      updateFilteredFiles(allFilesWithExample, currentFolder)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar arquivos')
-    } finally {
-      setLoading(false)
-    }
+
+  const loadFiles = () => {
+    setLoading(true)
+    setError(null)
+    console.log('FileList - Solicitando lista de arquivos via EventBus')
+    eventBus.emit('storage:list-files')
   }
   
   // Atualizar arquivos filtrados
@@ -105,133 +89,71 @@ export const FileList = ({ onRefresh }: FileListProps) => {
     }
   }
 
-  const handleDelete = async (fileId: string) => {
+  const handleDelete = (fileName: string) => {
     if (!confirm('Tem certeza que deseja deletar este arquivo?')) return
     
-    try {
-      await fileService.deleteFile(fileId)
-      await loadFiles()
-      onRefresh?.()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao deletar arquivo')
-    }
+    console.log('FileList - Emitindo evento de delete:', fileName)
+    eventBus.emit('storage:delete-file', { fileName })
   }
 
-  const handleDownload = async (fileId: string, fileName: string) => {
-    try {
-      const downloadUrl = await fileService.getDownloadUrl(fileId)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao baixar arquivo')
-    }
-  }
 
-  const handlePlay = async (file: any) => {
-    try {
-      let videoUrl
-      if (file.id === 'sample-video') {
-        videoUrl = '/sample-video.mp4'
-      } else {
-        // Detectar se existe versão convertida
-        const convertedFile = findConvertedVersion(file, allFiles)
-        const targetFile = convertedFile || file
-        
-        console.log('Video selection:', {
-          original: file.name,
-          converted: convertedFile?.name,
-          using: targetFile.name
-        })
-        
-        // Usar bucket público (solução que funciona)
-        const fileName = targetFile.id.split('/').pop()
-        videoUrl = `https://automacao-video.s3.amazonaws.com/videos/user-sergio-sena/${fileName}`
-      }
-      
-      console.log('Playing video:', { fileId: file.id, url: videoUrl })
-      
-      setCurrentVideo({
-        id: file.id,
-        name: file.name,
-        url: videoUrl,
-        type: 'video/mp4', // Sempre MP4 para compatibilidade
-        size: file.size,
-        lastModified: file.lastModified
-      })
-      setShowPlayer(true)
-    } catch (error) {
-      console.error('Error preparing video:', error)
-      // Fallback: tentar presigned URL
-      try {
-        videoUrl = await fileService.getDownloadUrl(file.id)
-        setCurrentVideo({
-          id: file.id,
-          name: file.name,
-          url: videoUrl,
-          type: 'video/mp4',
-          size: file.size,
-          lastModified: file.lastModified
-        })
-        setShowPlayer(true)
-      } catch (fallbackError) {
-        alert('Erro ao carregar vídeo. Tente novamente.')
-      }
-    }
-  }
 
-  // Função para encontrar versão convertida
-  const findConvertedVersion = (originalFile: any, fileList: any[]) => {
-    if (originalFile.name.toLowerCase().endsWith('.mp4')) {
-      return null // Já é MP4
-    }
-    
-    // Procurar versão .mp4 com mesmo timestamp
-    const baseName = originalFile.name.substring(0, originalFile.name.lastIndexOf('.'))
-    const convertedName = `${baseName}.mp4`
-    
-    return fileList.find(f => f.name === convertedName)
-  }
 
-  // Função para tentar múltiplas URLs
-  const tryMultipleUrls = async (fileId: string): Promise<string> => {
-    const urls = [
-      // 1. CloudFront (geralmente mais rápido)
-      `https://d2gikqc9umroy8.cloudfront.net/${fileId}`,
-      // 2. S3 direto
-      `https://drive-online-storage.s3.amazonaws.com/${fileId}`,
-      // 3. Presigned URL (fallback)
-      null // Será gerada se necessário
-    ]
-    
-    // Testar URLs diretas primeiro
-    for (const url of urls.filter(Boolean)) {
-      try {
-        // Teste rápido - se não der erro de CORS, provavelmente funciona
-        const testVideo = document.createElement('video')
-        testVideo.src = url as string
-        
-        // Retornar imediatamente - o browser vai lidar com CORS
-        return url as string
-      } catch (error) {
-        console.warn(`URL failed: ${url}`, error)
-      }
-    }
-    
-    // Fallback: presigned URL
-    try {
-      return await fileService.getDownloadUrl(fileId)
-    } catch (error) {
-      throw new Error('Nenhuma URL de vídeo disponível')
-    }
-  }
 
   useEffect(() => {
     loadFiles()
+    
+    // Escutar eventos do StorageModule
+    eventBus.on('storage:files-loaded', handleStorageFilesLoaded)
+    eventBus.on('storage:file-deleted', handleFileDeleted)
+    eventBus.on('storage:error', handleStorageError)
+    
+    return () => {
+      eventBus.off('storage:files-loaded', handleStorageFilesLoaded)
+      eventBus.off('storage:file-deleted', handleFileDeleted)
+      eventBus.off('storage:error', handleStorageError)
+    }
   }, [])
+  
+  const handleStorageFilesLoaded = (data: any) => {
+    console.log('FileList - Arquivos carregados via EventBus:', data.total)
+    setAllFiles(data.files)
+    setFolders(folderService.extractFoldersFromFiles(data.files))
+    updateFilteredFiles(data.files, currentFolder)
+    setLoading(false)
+    
+    // Processar limpeza automática após carregar arquivos
+    setTimeout(async () => {
+      try {
+        console.log('FileList - Iniciando verificação de limpeza automática...')
+        const cleanupResults = await cleanupService.processAutoCleanup(data.files)
+        
+        if (cleanupResults.length > 0) {
+          console.log('FileList - Resultados da limpeza:', cleanupResults)
+          
+          // Mostrar notificação se houver limpezas agendadas
+          const scheduledCleanups = cleanupResults.filter(r => r.success)
+          if (scheduledCleanups.length > 0) {
+            console.log(`FileList - ${scheduledCleanups.length} arquivo(s) agendado(s) para limpeza automática`)
+          }
+        }
+      } catch (error) {
+        console.error('FileList - Erro na verificação de limpeza:', error)
+      }
+    }, 3000) // Aguardar 3s após carregar lista
+  }
+  
+  const handleFileDeleted = (data: { fileName: string }) => {
+    console.log('FileList - Arquivo deletado via EventBus:', data.fileName)
+    // Recarregar lista após delete
+    eventBus.emit('storage:refresh')
+  }
+  
+  const handleStorageError = (data: { action: string, error: string }) => {
+    console.error('FileList - Erro do StorageModule:', data)
+    setError(`Erro ao ${data.action}: ${data.error}`)
+    setLoading(false)
+  }
 
   // Auto-reload quando onRefresh é chamado
   useEffect(() => {
@@ -280,7 +202,7 @@ export const FileList = ({ onRefresh }: FileListProps) => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-white">Meus Arquivos</h2>
           <button
-            onClick={loadFiles}
+            onClick={() => eventBus.emit('storage:refresh')}
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm"
           >
             Atualizar
@@ -328,11 +250,12 @@ export const FileList = ({ onRefresh }: FileListProps) => {
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 flex items-center justify-center">
                   {file.type.startsWith('image/') ? (
-                    <ImagePreview fileId={file.id} fileName={file.name} />
+                    <ImagePreview fileName={file.name} />
                   ) : (
                     <div className="text-2xl">
                       {file.type.includes('pdf') ? '📄' : 
-                       file.type.includes('video') ? '🎥' : 
+                       file.type.includes('video') || file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv)$/i) ? 
+                         conversionService.getStatusIcon(file.name, file.size) : 
                        file.type.includes('audio') ? '🎵' : '📄'}
                     </div>
                   )}
@@ -341,24 +264,30 @@ export const FileList = ({ onRefresh }: FileListProps) => {
                   <p className="text-white font-medium truncate max-w-[300px]" title={file.name}>{file.name}</p>
                   <p className="text-gray-400 text-sm">
                     {folderService.formatSize(file.size)} • {new Date(file.lastModified).toLocaleDateString()}
+                    {(file.type.includes('video') || file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv)$/i)) && (
+                      <span className="ml-2 text-xs text-cyan-400">
+                        • {conversionService.getStatusTooltip(file.name, file.size)}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-2">
-                {(file.type.startsWith('video/') || file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv)$/i)) && (
+                {(appConfig.isVideoFile(file.name) || appConfig.isAudioFile(file.name) || appConfig.isImageFile(file.name) || appConfig.isDocumentFile(file.name)) && (
                   <button
-                    onClick={() => handlePlay(file)}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors flex items-center space-x-1"
-                    title={findConvertedVersion(file, allFiles) ? 'Reproduzir (versão otimizada disponível)' : 'Reproduzir'}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setPlayerPosition({ top: rect.top, left: rect.left })
+                      setSelectedFile(file)
+                    }}
+                    className="px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded text-sm transition-colors flex items-center gap-1"
                   >
-                    <span>▶️</span>
-                    <span>Play</span>
-                    {findConvertedVersion(file, allFiles) && <span className="text-xs">🎯</span>}
+                    ▶️ Play
                   </button>
                 )}
                 <button
-                  onClick={() => handleDelete(file.id)}
+                  onClick={() => handleDelete(file.name)}
                   className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
                 >
                   Deletar
@@ -368,32 +297,17 @@ export const FileList = ({ onRefresh }: FileListProps) => {
           ))}
         </div>
       )}
-      
-      {/* Modal do Player */}
-      {showPlayer && currentVideo && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-xl border border-cyan-500/20 w-full max-w-4xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h3 className="text-white font-semibold truncate">{currentVideo.name}</h3>
-              <button
-                onClick={() => setShowPlayer(false)}
-                className="text-gray-400 hover:text-white transition-colors text-xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4">
-              <video
-                controls
-                autoPlay
-                className="w-full max-h-[70vh] bg-black rounded"
-                src={currentVideo.url}
-              >
-                Seu navegador não suporta o elemento de vídeo.
-              </video>
-            </div>
-          </div>
-        </div>
+
+      {/* MediaPlayer Modal */}
+      {selectedFile && (
+        <MediaPlayer
+          file={selectedFile}
+          position={playerPosition}
+          onClose={() => {
+            setSelectedFile(null)
+            setPlayerPosition(null)
+          }}
+        />
       )}
     </div>
   )

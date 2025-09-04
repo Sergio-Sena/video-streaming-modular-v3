@@ -1,120 +1,67 @@
 import { useState, useEffect } from 'react'
 import { authService } from '../../auth/services/authService'
-import { VideoList } from '../../player/components/VideoList'
 import { FileUpload } from '../../files/components/FileUpload/FileUpload'
 import { StorageStats } from '../../files/components/StorageStats'
 import { FileList } from '../../files/components/FileList'
-import { VideoFile } from '../../player/services/playerService'
-import { apiClient } from '../../../shared/services/apiClient'
+import { eventBus } from '../../../core/engine/EventBus'
 
 export const Dashboard = () => {
-  const [user] = useState(() => authService.getUser())
-  const [videos, setVideos] = useState<VideoFile[]>([])
+  const [user, setUser] = useState(() => authService.getUser())
   const [activeTab, setActiveTab] = useState<'files' | 'upload' | 'storage'>('files')
   const [isLoading, setIsLoading] = useState(false)
+  const [dashboardState, setDashboardState] = useState<any>(null)
+  const [notifications, setNotifications] = useState<any[]>([])
 
   const handleLogout = async () => {
-    authService.logout()
-    window.location.href = '/login'
+    console.log('Dashboard - Emitindo evento de logout via EventBus')
+    eventBus.emit('auth:logout-request')
   }
 
-  const loadVideos = async () => {
-    setIsLoading(true)
-    try {
-      const response = await apiClient.get('/files')
-      
-      if (response.ok) {
-        const data = await response.json()
-        const videoFiles = (data.files || []).filter((file: any) => {
-          const isVideoType = file.type?.startsWith('video/')
-          const isVideoExtension = file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv)$/i)
-          const hasVideoInName = file.name?.toLowerCase().includes('video')
-          
-          console.log('Arquivo:', file.name, 'Tipo:', file.type, 'É vídeo:', isVideoType || isVideoExtension || hasVideoInName)
-          
-          return isVideoType || isVideoExtension || hasVideoInName
-        }).map((file: any) => ({
-          id: file.id || file.name,
-          name: file.name,
-          url: `https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files/${file.id}/download`,
-          type: file.type || 'video/mp4',
-          size: file.size || 0,
-          lastModified: file.lastModified || new Date().toISOString()
-        }))
-        
-        console.log('Total de arquivos:', data.files?.length)
-        console.log('Vídeos filtrados:', videoFiles.length)
-        // Se não encontrou vídeos com filtro, mostrar todos os arquivos de mídia
-        if (videoFiles.length === 0) {
-          const allMediaFiles = (data.files || []).filter((file: any) => {
-            const isMedia = file.name?.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|ts|m4v|3gp|ogv|mp3|wav|m4a|jpg|jpeg|png|gif|pdf)$/i)
-            return isMedia
-          }).map((file: any) => ({
-            id: file.id || file.name,
-            name: file.name,
-            url: `https://g1laj6w194.execute-api.us-east-1.amazonaws.com/prod/files/${file.id}/download`,
-            type: file.type || 'video/mp4',
-            size: file.size || 0,
-            lastModified: file.lastModified || new Date().toISOString()
-          }))
-          
-          console.log('Mostrando todos os arquivos de mídia:', allMediaFiles.length)
-          setVideos(allMediaFiles)
-        } else {
-          setVideos(videoFiles)
-        }
-        
-        // Sempre adicionar vídeo de exemplo no início
-        const sampleVideo = {
-          id: 'sample-video',
-          name: 'Vídeo de Exemplo (Local)',
-          url: '/sample-video.mp4',
-          type: 'video/mp4',
-          size: 299762481,
-          lastModified: new Date().toISOString()
-        }
-        setVideos(prev => [sampleVideo, ...prev])
-      } else {
-        console.warn('Erro ao carregar vídeos, usando fallback')
-        setVideos([])
-      }
-    } catch (error) {
-      console.error('Erro ao carregar vídeos:', error)
-      setVideos([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+
 
   useEffect(() => {
-    // Aguardar um pouco antes de verificar autenticação
-    const checkAndLoad = async () => {
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      const token = authService.getToken()
-      const user = authService.getUser()
-      
-      console.log('Dashboard useEffect - Token:', token ? 'EXISTS' : 'NULL')
-      console.log('Dashboard useEffect - User:', user ? 'EXISTS' : 'NULL')
-      console.log('Dashboard useEffect - isAuthenticated:', authService.isAuthenticated())
-      
-      if (authService.isAuthenticated()) {
-        loadVideos()
-      } else {
-        console.warn('Usuário não autenticado, redirecionando...')
-        window.location.href = '/login'
-      }
-    }
+    // Escutar eventos do DashboardModule
+    eventBus.on('dashboard:state-updated', handleDashboardStateUpdate)
+    eventBus.on('dashboard:notification', handleNotification)
+    eventBus.on('auth:logout-success', handleLogoutSuccess)
     
-    checkAndLoad()
+    return () => {
+      eventBus.off('dashboard:state-updated', handleDashboardStateUpdate)
+      eventBus.off('dashboard:notification', handleNotification)
+      eventBus.off('auth:logout-success', handleLogoutSuccess)
+    }
   }, [])
+
+  const handleDashboardStateUpdate = (state: any) => {
+    console.log('Dashboard - State updated via EventBus:', state.stats)
+    setDashboardState(state)
+    if (state.user) {
+      setUser(state.user)
+    }
+  }
+
+  const handleNotification = (notification: any) => {
+    console.log('Dashboard - Notification via EventBus:', notification.type, notification.message)
+    const notificationWithId = { ...notification, id: Date.now() }
+    setNotifications(prev => [...prev, notificationWithId])
+    
+    // Auto-remove notification after 3 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notificationWithId.id))
+    }, 3000)
+  }
+
+  const handleLogoutSuccess = () => {
+    console.log('Dashboard - Logout success, redirecting...')
+    window.location.href = '/login'
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'files':
-        return <FileList onRefresh={loadVideos} />
+        return <FileList />
       case 'upload':
-        return <FileUpload onUploadComplete={loadVideos} />
+        return <FileUpload />
       case 'storage':
         return <StorageStats />
       default:
@@ -134,13 +81,20 @@ export const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <div className="text-2xl font-bold">
-                <span className="neon-text neon-glow">Drive</span>
-                <span className="text-white ml-2">Online</span>
+              <div className="text-2xl font-bold flex items-center gap-2">
+                <span className="text-xl">🎬</span>
+                <span className="neon-text neon-glow">Mediaflow</span>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-300">Olá, {user?.name}</span>
+              {dashboardState?.stats && (
+                <div className="text-xs text-gray-400">
+                  {dashboardState.stats.totalFiles} arquivos • 
+                  {dashboardState.stats.activeUploads} uploads •
+                  {dashboardState.stats.isPlaying ? ' ▶️ Playing' : ''}
+                </div>
+              )}
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-all duration-300 backdrop-blur-sm border border-red-500/30"
@@ -181,6 +135,34 @@ export const Dashboard = () => {
           </div>
         </div>
       </nav>
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`px-4 py-3 rounded-lg backdrop-blur-sm border ${
+                notification.type === 'success' 
+                  ? 'bg-green-600/80 border-green-500/30 text-white'
+                  : notification.type === 'error'
+                  ? 'bg-red-600/80 border-red-500/30 text-white'
+                  : 'bg-blue-600/80 border-blue-500/30 text-white'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm">{notification.message}</span>
+                <button
+                  onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                  className="ml-2 text-white/70 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

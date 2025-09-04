@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { authService } from '../services/authService'
+import { eventBus } from '../../../core/engine/EventBus'
 
 interface LoginFormData {
   email: string
@@ -16,43 +16,44 @@ const LoginForm = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  useEffect(() => {
+    // Escutar eventos de autenticação
+    eventBus.on('auth:login-success', handleLoginSuccess)
+    eventBus.on('auth:login-error', handleLoginError)
+    
+    return () => {
+      eventBus.off('auth:login-success', handleLoginSuccess)
+      eventBus.off('auth:login-error', handleLoginError)
+    }
+  }, [])
+
+  const handleLoginSuccess = (data: any) => {
+    console.log('LoginForm - Login bem-sucedido via EventBus:', data.user?.name)
+    setSuccess('Login realizado com sucesso!')
+    setIsLoading(false)
+    
+    setTimeout(() => {
+      window.location.href = '/dashboard'
+    }, 300)
+  }
+
+  const handleLoginError = (data: { error: string }) => {
+    console.error('LoginForm - Erro no login via EventBus:', data.error)
+    setError(data.error)
+    setIsLoading(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
     setSuccess('')
 
-    try {
-      // Tentar login real com API
-      const result = await authService.login(formData.email, formData.password)
-      setSuccess('Login realizado com sucesso!')
-      console.log('Login successful:', result)
-      
-      // Aguardar um pouco e verificar se o token foi salvo
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      const savedToken = authService.getToken()
-      const savedUser = authService.getUser()
-      
-      console.log('Verificação pós-login:')
-      console.log('- Token salvo:', savedToken ? 'OK' : 'ERRO')
-      console.log('- User salvo:', savedUser ? 'OK' : 'ERRO')
-      console.log('- Autenticado:', authService.isAuthenticated())
-      
-      if (savedToken && savedUser) {
-        // Redirecionar para dashboard
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 300)
-      } else {
-        throw new Error('Autenticação não foi salva corretamente')
-      }
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('Email ou senha inválidos')
-    } finally {
-      setIsLoading(false)
-    }
+    console.log('LoginForm - Emitindo evento de login:', { email: formData.email })
+    eventBus.emit('auth:login-request', { 
+      email: formData.email, 
+      password: formData.password 
+    })
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

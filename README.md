@@ -114,9 +114,10 @@ npm run deploy
 3. Vídeos são automaticamente otimizados para streaming
 
 ### Reprodução de Vídeos
-1. Clique no botão "Play" em qualquer vídeo
-2. Player HTML5 carrega automaticamente
-3. Streaming direto sem buffering
+1. Clique no botão "Play" em qualquer mídia
+2. Modal abre sempre no centro da tela
+3. Suporte a vídeos, áudios, imagens e PDFs
+4. Funciona em todos os filtros (Todos, Vídeos, Fotos, Documentos)
 
 ### Gerenciamento
 - **Deletar**: Remove do storage privado e público

@@ -121,12 +121,7 @@ export const MediaPlayer = ({ file, position, onClose }: MediaPlayerProps) => {
 
   return (
     <div 
-      className="fixed z-50"
-      style={{
-        top: position ? `${position.top}px` : '50%',
-        left: '50%',
-        transform: position ? 'translateX(-50%)' : 'translate(-50%, -50%)'
-      }}
+      className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
     >
       <div className="bg-gray-900 rounded-xl border border-cyan-500/20 flex flex-col">
         {/* Header */}

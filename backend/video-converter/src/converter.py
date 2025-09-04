@@ -79,7 +79,8 @@ def start_conversion(bucket, key):
         
         # Input e Output S3 URLs
         input_url = f"s3://{bucket}/{key}"
-        output_url = f"s3://{bucket}/{output_key.rsplit('/', 1)[0]}/"
+        # Output vai para bucket temporário de processamento
+        output_url = f"s3://automacao-video/videos/user-sergio-sena/"
         
         print(f"Convertendo: {input_url} -> {output_url}")
         

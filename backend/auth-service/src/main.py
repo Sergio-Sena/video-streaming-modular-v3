@@ -751,6 +751,67 @@ async def get_download_url(file_key: str, current_user: dict = Depends(verify_to
         print(f"Error getting download URL: {e}")
         raise HTTPException(status_code=500, detail="Error getting download URL")
 
+@app.post("/files/upload-complete")
+async def upload_complete(request: dict, current_user: dict = Depends(verify_token)):
+    """Notify that upload is complete and copy video if needed"""
+    try:
+        file_id = request.get('fileId')
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        if not file_id or not file_id.startswith(f"users/{user_id}/"):
+            raise HTTPException(status_code=400, detail="Invalid file ID")
+        
+        # If it's a video, auto-copy to public bucket
+        if is_video_file(file_id):
+            try:
+                public_key = copy_to_public_bucket(file_id, user_id)
+                public_url = f"https://{PUBLIC_VIDEO_BUCKET}.s3.amazonaws.com/{public_key}"
+                
+                return {
+                    'message': 'Upload complete and video made public',
+                    'publicUrl': public_url,
+                    'isVideo': True
+                }
+            except Exception as e:
+                print(f"Failed to copy video to public bucket: {e}")
+                return {
+                    'message': 'Upload complete but failed to make video public',
+                    'isVideo': True,
+                    'error': str(e)
+                }
+        else:
+            return {
+                'message': 'Upload complete',
+                'isVideo': False
+            }
+        
+    except Exception as e:
+        print(f"Error in upload complete: {e}")
+        raise HTTPException(status_code=500, detail="Error processing upload completion")
+
+
+@app.post("/files/upload-complete")
+async def upload_complete_endpoint(request: dict, current_user: dict = Depends(verify_token)):
+    """Notify upload completion"""
+    try:
+        file_id = request.get('fileId')
+        user_id = current_user.get('user_id', 'user-sergio-sena')
+        
+        if not file_id:
+            raise HTTPException(status_code=400, detail="File ID required")
+        
+        if is_video_file(file_id):
+            try:
+                public_key = copy_to_public_bucket(file_id, user_id)
+                return {'message': 'Upload complete', 'isVideo': True, 'publicKey': public_key}
+            except Exception as e:
+                return {'message': 'Upload complete', 'isVideo': True, 'error': str(e)}
+        
+        return {'message': 'Upload complete', 'isVideo': False}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/files/upload-url")
 async def get_upload_url(request: dict, current_user: dict = Depends(verify_token)):
     """Get presigned URL for file upload with duplicate check"""
@@ -795,7 +856,7 @@ async def get_upload_url(request: dict, current_user: dict = Depends(verify_toke
                 'Key': file_key,
                 'ContentType': content_type
             },
-            ExpiresIn=3600  # 1 hour
+            ExpiresIn=7200  # 2 hours
         )
         
         # Auto-copy videos to public bucket after upload URL generation
@@ -918,32 +979,121 @@ async def upload_complete(request: dict, current_user: dict = Depends(verify_tok
 @app.delete("/files/{file_key:path}")
 async def delete_file(file_key: str, current_user: dict = Depends(verify_token)):
     """Delete user file from S3 (private and public if video)"""
+    
+    # Log inicial SEMPRE
+    print(f"\n=== DELETE FUNCTION CALLED ===")
+    print(f"Raw file_key: '{file_key}'")
+    print(f"Current user: {current_user}")
+    
     try:
         user_id = current_user.get('user_id', 'user-sergio-sena')
+        print(f"User ID: {user_id}")
         
-        # Ensure user can only delete their own files
-        if not file_key.startswith(f"users/{user_id}/"):
-            raise HTTPException(status_code=403, detail="Access denied")
+        # Decode URL encoding
+        from urllib.parse import unquote
+        decoded_file_key = unquote(file_key)
+        print(f"Decoded file_key: '{decoded_file_key}'")
         
-        # Delete from private bucket
-        s3_client.delete_object(Bucket=STORAGE_BUCKET, Key=file_key)
+        # Verificar se é apenas um teste
+        if decoded_file_key == 'test':
+            print("Test delete request - returning success")
+            return {'message': 'Test delete successful'}
         
-        # If it's a video, also delete from public bucket
-        if is_video_file(file_key):
+        # Se não contém o path completo, buscar o arquivo
+        if not decoded_file_key.startswith(f"users/{user_id}/"):
+            print(f"Searching for file in S3: {decoded_file_key}")
+            
             try:
-                filename = file_key.split('/')[-1]
-                public_key = f"videos/{user_id}/{filename}"
-                s3_client.delete_object(Bucket=PUBLIC_VIDEO_BUCKET, Key=public_key)
-                print(f"Video also deleted from public bucket: {public_key}")
+                # Buscar arquivo na listagem
+                response = s3_client.list_objects_v2(
+                    Bucket=STORAGE_BUCKET,
+                    Prefix=f"users/{user_id}/"
+                )
+                
+                print(f"S3 list response: {response.get('KeyCount', 0)} objects")
+                
+                full_file_key = None
+                if 'Contents' in response:
+                    for obj in response['Contents']:
+                        obj_filename = obj['Key'].split('/')[-1]
+                        print(f"Checking S3 object: {obj['Key']} -> filename: {obj_filename}")
+                        if obj_filename == decoded_file_key:
+                            full_file_key = obj['Key']
+                            print(f"MATCH FOUND: {full_file_key}")
+                            break
+                
+                if not full_file_key:
+                    print(f"ERROR: File not found in S3: {decoded_file_key}")
+                    raise HTTPException(status_code=404, detail="File not found")
+                
+                file_key_to_delete = full_file_key
+                
             except Exception as e:
-                print(f"Failed to delete from public bucket: {e}")
-                # Don't fail the whole operation if public delete fails
+                print(f"ERROR searching S3: {e}")
+                raise HTTPException(status_code=500, detail=f"Error searching file: {str(e)}")
+        else:
+            file_key_to_delete = decoded_file_key
         
+        print(f"Final file key to delete: {file_key_to_delete}")
+        
+        # Verificar se arquivo existe antes de deletar
+        try:
+            print(f"Checking if file exists: {file_key_to_delete}")
+            head_response = s3_client.head_object(Bucket=STORAGE_BUCKET, Key=file_key_to_delete)
+            print(f"File exists, size: {head_response.get('ContentLength', 0)} bytes")
+        except s3_client.exceptions.NoSuchKey:
+            print(f"ERROR: File does not exist: {file_key_to_delete}")
+            raise HTTPException(status_code=404, detail="File not found in storage")
+        except Exception as e:
+            print(f"ERROR checking file existence: {e}")
+            raise HTTPException(status_code=500, detail=f"Error checking file: {str(e)}")
+        
+        # Executar delete
+        try:
+            print(f"Executing delete: {file_key_to_delete}")
+            delete_response = s3_client.delete_object(Bucket=STORAGE_BUCKET, Key=file_key_to_delete)
+            print(f"Delete response: {delete_response}")
+        except Exception as e:
+            print(f"ERROR during delete: {e}")
+            raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+        
+        # Se for vídeo, deletar também do bucket público
+        if is_video_file(file_key_to_delete):
+            filename = file_key_to_delete.split('/')[-1]
+            public_key = f"videos/{user_id}/{filename}"
+            print(f"Video file detected, checking public bucket: {public_key}")
+            
+            try:
+                s3_client.head_object(Bucket=PUBLIC_VIDEO_BUCKET, Key=public_key)
+                s3_client.delete_object(Bucket=PUBLIC_VIDEO_BUCKET, Key=public_key)
+                print(f"DELETED from public bucket: {public_key}")
+            except s3_client.exceptions.NoSuchKey:
+                print(f"File not in public bucket (OK): {public_key}")
+            except Exception as e:
+                print(f"ERROR deleting from public bucket: {e}")
+        
+        # Verificar se foi realmente deletado
+        try:
+            print(f"Verifying deletion: {file_key_to_delete}")
+            s3_client.head_object(Bucket=STORAGE_BUCKET, Key=file_key_to_delete)
+            print(f"ERROR: File still exists after delete attempt!")
+            raise HTTPException(status_code=500, detail="File deletion verification failed")
+        except s3_client.exceptions.NoSuchKey:
+            print(f"SUCCESS: File confirmed deleted from S3")
+        except Exception as e:
+            print(f"ERROR during verification: {e}")
+        
+        print(f"=== DELETE COMPLETED SUCCESSFULLY ===")
         return {'message': 'File deleted successfully'}
         
+    except HTTPException as he:
+        print(f"HTTP Exception: {he.detail}")
+        raise
     except Exception as e:
-        print(f"Error deleting file: {e}")
-        raise HTTPException(status_code=500, detail="Error deleting file")
+        print(f"UNEXPECTED ERROR in delete_file: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # Lambda handler
 handler = Mangum(app)
